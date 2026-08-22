@@ -1,0 +1,112 @@
+# NGO Report Studio — full stack
+# App: nextjs | API: FastAPI | Worker: Celery | Redis | Postgres 16 | MinIO | nginx
+#
+# Usage: docker compose up -d --build
+# Then open http://<host> (nginx on :80).
+
+name: ngo-report
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ngo_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ngo_app_dev_password}
+      POSTGRES_DB: ngo_report
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ngo_app -d ngo_report"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - miniodata:/data
+    ports:
+      - "9001:9001" # console
+
+  api:
+    build: ./apps/api
+    environment:
+      DATABASE_URL: postgresql+psycopg://ngo_app:${POSTGRES_PASSWORD:-ngo_app_dev_password}@postgres:5432/ngo_report
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_BACKEND: minio
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_SECURE: "false"
+      MINIO_BUCKET: ngo-report
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      FRONTEND_ORIGIN: http://localhost
+      PUBLIC_BASE_URL: http://localhost/api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    expose:
+      - "8000"
+
+  celery-worker:
+    build: ./apps/api
+    command: celery -A app.celery_app worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+psycopg://ngo_app:${POSTGRES_PASSWORD:-ngo_app_dev_password}@postgres:5432/ngo_report
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_BACKEND: minio
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_SECURE: "false"
+      MINIO_BUCKET: ngo-report
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost/api
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+    depends_on:
+      - api
+    expose:
+      - "3000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - web
+
+volumes:
+  pgdata:
+  miniodata:

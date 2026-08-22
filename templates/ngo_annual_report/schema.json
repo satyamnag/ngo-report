@@ -1,0 +1,159 @@
+{
+  "title": "NGO Annual Report",
+  "description": "Standard annual report template with cover, mission, impact, financials, donor acknowledgment and future goals.",
+  "sections": [
+    {
+      "key": "cover",
+      "label": "Cover",
+      "sort": 0
+    },
+    {
+      "key": "mission",
+      "label": "Mission",
+      "sort": 1
+    },
+    {
+      "key": "impact",
+      "label": "Impact",
+      "sort": 2
+    },
+    {
+      "key": "financials",
+      "label": "Financials",
+      "sort": 3
+    },
+    {
+      "key": "donors",
+      "label": "Donor Acknowledgment",
+      "sort": 4
+    },
+    {
+      "key": "goals",
+      "label": "Future Goals",
+      "sort": 5
+    }
+  ],
+  "section_map": {
+    "mission": "mission.statement",
+    "donors": "donors.acknowledgment",
+    "goals": "future_goals"
+  },
+  "fields": [
+    {
+      "group": "Cover",
+      "fields": [
+        {
+          "name": "org_name",
+          "label": "Organization name",
+          "type": "text",
+          "path": "org_name",
+          "required": true
+        },
+        {
+          "name": "report_year",
+          "label": "Report year",
+          "type": "text",
+          "path": "report_year",
+          "required": true
+        },
+        {
+          "name": "tagline",
+          "label": "Tagline",
+          "type": "textarea",
+          "path": "tagline",
+          "required": false
+        },
+        {
+          "name": "logo",
+          "label": "Logo image",
+          "type": "image",
+          "path": "logo",
+          "placeholder": "logo",
+          "required": false
+        }
+      ]
+    },
+    {
+      "group": "Mission",
+      "fields": [
+        {
+          "name": "mission_statement",
+          "label": "Mission statement",
+          "type": "textarea",
+          "path": "mission.statement",
+          "required": true
+        }
+      ]
+    },
+    {
+      "group": "Impact",
+      "fields": [
+        {
+          "name": "impact_beneficiaries",
+          "label": "Beneficiaries served",
+          "type": "number",
+          "path": "impact.beneficiaries",
+          "required": true
+        },
+        {
+          "name": "impact_communities",
+          "label": "Communities reached",
+          "type": "number",
+          "path": "impact.communities",
+          "required": true
+        },
+        {
+          "name": "impact_volunteers",
+          "label": "Volunteers engaged",
+          "type": "number",
+          "path": "impact.volunteers",
+          "required": true
+        }
+      ]
+    },
+    {
+      "group": "Financials",
+      "fields": [
+        {
+          "name": "financial_total",
+          "label": "Total funding",
+          "type": "number",
+          "path": "financial.total",
+          "required": true
+        },
+        {
+          "name": "chart_funding",
+          "label": "Funding chart image",
+          "type": "image",
+          "path": "chart_funding",
+          "placeholder": "chart_funding",
+          "required": false
+        }
+      ]
+    },
+    {
+      "group": "Donor Acknowledgment",
+      "fields": [
+        {
+          "name": "donors_ack",
+          "label": "Donor acknowledgment text",
+          "type": "textarea",
+          "path": "donors.acknowledgment",
+          "required": false
+        }
+      ]
+    },
+    {
+      "group": "Future Goals",
+      "fields": [
+        {
+          "name": "future_goals",
+          "label": "Future goals",
+          "type": "textarea",
+          "path": "future_goals",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,254 @@
+:root {
+  --teal: #0b6e6b;
+  --teal-dark: #08514f;
+  --ink: #223333;
+  --grey: #6b7280;
+  --bg: #f7f9f9;
+  --card: #ffffff;
+  --border: #e2e8e8;
+  --danger: #b91c1c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+a {
+  color: var(--teal);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+.nav .brand {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--teal);
+  margin-right: auto;
+}
+.nav .muted {
+  color: var(--grey);
+  font-size: 13px;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-size: 22px;
+  margin: 4px 0 16px;
+}
+h2 {
+  font-size: 17px;
+  margin: 0 0 10px;
+}
+
+button {
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+button:hover {
+  background: var(--teal-dark);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+button.secondary {
+  background: #fff;
+  color: var(--teal);
+  border: 1px solid var(--teal);
+}
+button.secondary:hover {
+  background: #eff7f7;
+}
+button.danger {
+  background: var(--danger);
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--ink);
+}
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 12px 0 4px;
+  color: var(--ink);
+}
+
+.field-group {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 12px;
+}
+.field-group h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--teal);
+  margin: 8px 0;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #eef2f2;
+  color: var(--grey);
+}
+.status-pill.completed {
+  background: #e3f3ec;
+  color: #146b3a;
+}
+.status-pill.failed {
+  background: #fde8e8;
+  color: var(--danger);
+}
+.status-pill.running,
+.status-pill.pending,
+.status-pill.converting {
+  background: #fff4e0;
+  color: #92500e;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.spacer {
+  flex: 1;
+}
+.error {
+  color: var(--danger);
+  font-size: 13px;
+}
+.muted {
+  color: var(--grey);
+  font-size: 13px;
+}
+pre.json {
+  background: #0f1b1b;
+  color: #bfe3e0;
+  padding: 12px;
+  border-radius: 8px;
+  overflow: auto;
+  font-size: 12px;
+}
+
+.editor-shell {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+.editor-toolbar {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  background: #fafcfc;
+  border-radius: 10px 10px 0 0;
+}
+.editor-toolbar button {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 13px;
+}
+.editor-toolbar button.is-active {
+  background: var(--teal);
+  color: #fff;
+}
+.ProseMirror {
+  padding: 14px 16px;
+  min-height: 140px;
+  outline: none;
+}
+.ProseMirror p {
+  margin: 0 0 10px;
+}
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3 {
+  margin: 12px 0 6px;
+}
+
+.uploads {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.upload-card {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.upload-card.has {
+  border-style: solid;
+  border-color: var(--teal);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #10181a;
+    --card: #162124;
+    --border: #2b3a3e;
+    --ink: #dce7e6;
+    --grey: #93a5a3;
+  }
+}
