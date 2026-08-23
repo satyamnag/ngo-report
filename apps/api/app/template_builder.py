@@ -658,8 +658,8 @@ PUBLICATION_SCHEMA = {
 from docx.oxml import OxmlElement  # noqa: E402
 from docx.oxml.ns import qn  # noqa: E402
 
-BLUE = RGBColor(0x44, 0x84, 0xCE)
-BLUE_HEX = "4484CE"
+BLUE = RGBColor(0x5B, 0x8D, 0xEF)
+BLUE_HEX = "5B8DEF"
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 
 
@@ -741,6 +741,56 @@ def _toc_item(cell, label: str, authors: str) -> None:
     a.paragraph_format.space_after = Pt(8)
 
 
+def _badge(cell, text: str) -> None:
+    """A blue numbered badge (approx. the reference circle)."""
+    t = cell.add_table(rows=1, cols=1)
+    t.autofit = False
+    tc = t.rows[0].cells[0]
+    tc.width = Inches(0.5)
+    _shade_cell(tc, BLUE_HEX)
+    p = tc.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _white_run(p, text, size=16, bold=True)
+
+
+def _section_heading(cell, title: str) -> None:
+    p = cell.add_paragraph()
+    run = p.add_run(title)
+    run.bold = True
+    run.font.size = Pt(24)
+    run.font.color.rgb = DARK
+
+
+def _authors_line(cell, text: str, space: int = 14) -> None:
+    p = cell.add_paragraph()
+    run = p.add_run(text)
+    run.font.color.rgb = GREY
+    run.font.size = Pt(9)
+    p.paragraph_format.space_after = Pt(space)
+
+
+def _metric_table(cell, headers: list[str], rows: list[list[tuple[str, str]]]) -> None:
+    """A 3-column metric grid inside a blue band (shaded cells blend in)."""
+    t = cell.add_table(rows=1 + len(rows), cols=len(headers))
+    t.autofit = False
+    for j, h in enumerate(headers):
+        c = t.rows[0].cells[j]
+        _shade_cell(c, BLUE_HEX)
+        p = c.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        _white_run(p, h, size=9, bold=True)
+    for i, row in enumerate(rows, start=1):
+        for j, (value, label) in enumerate(row):
+            c = t.rows[i].cells[j]
+            _shade_cell(c, BLUE_HEX)
+            p = c.paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _white_run(p, value, size=15, bold=True)
+            p2 = c.add_paragraph()
+            p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _white_run(p2, label, size=8)
+
+
 def build_magazine_template() -> bytes:
     doc = Document()
     _style_base(doc)
@@ -770,21 +820,24 @@ def build_magazine_template() -> bytes:
     f_run.font.color.rgb = GREY
 
     # ---- Page 1: Cover ----
-    cover = _fixed_table(doc, [2.7, 6.4])
+    cover = _fixed_table(doc, [3.2, 5.9])
     left, right = cover.rows[0].cells
     _shade_cell(right, BLUE_HEX)
     _photo_cell(left, "[img:cover_photo]")
     logo_p = right.paragraphs[0]
     logo_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
     logo_p.add_run("[img:cover_logo]")
-    for _ in range(3):
+    for _ in range(4):
         right.add_paragraph()
     year_p = right.add_paragraph()
     year_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _white_run(year_p, "{{ report_year }}", size=40, bold=True)
-    title_p = right.add_paragraph()
-    title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _white_run(title_p, "ANNUAL REPORT", size=30, bold=True)
+    _white_run(year_p, "{{ report_year }}", size=44, bold=False)
+    an_p = right.add_paragraph()
+    an_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _white_run(an_p, "ANNUAL", size=30, bold=True)
+    re_p = right.add_paragraph()
+    re_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _white_run(re_p, "REPORT", size=30, bold=True)
     tag = right.add_paragraph()
     tag.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _white_run(tag, "{{ tagline }}", size=13)
@@ -796,61 +849,81 @@ def build_magazine_template() -> bytes:
     doc.add_page_break()
 
     # ---- Page 2: Contents & Introduction ----
-    contents = _fixed_table(doc, [2.7, 6.4])
+    contents = _fixed_table(doc, [3.2, 5.9])
     left, right = contents.rows[0].cells
     _photo_cell(left, "[img:contents_photo]")
-    for num in ("1", "2", "3"):
-        _circle_number(left, num)
     h = right.paragraphs[0]
-    run = h.add_run("CONTENTS")
+    run = h.add_run("Contents")
     run.bold = True
-    run.font.size = Pt(16)
-    run.font.color.rgb = BLUE
+    run.font.size = Pt(22)
+    run.font.color.rgb = DARK
     pPr = h._p.get_or_add_pPr()
     pBdr = OxmlElement("w:pBdr")
     bottom = OxmlElement("w:bottom")
     bottom.set(qn("w:val"), "single")
     bottom.set(qn("w:sz"), "12")
-    bottom.set(qn("w:space"), "4")
-    bottom.set(qn("w:color"), BLUE_HEX)
+    bottom.set(qn("w:space"), "6")
+    bottom.set(qn("w:color"), "E8E8E8")
     pBdr.append(bottom)
     pPr.append(pBdr)
-    _toc_item(right, "1 STRATEGY", "KALAN ABHEEDI, ROYCE CHALMER")
-    _toc_item(right, "2 FINANCE", "AMANDA SULLY, JANN VAN HUYSEN")
-    _toc_item(right, "3 PROJECTS", "JEANNETTE MOSS, ELENA SONG")
+    h.paragraph_format.space_after = Pt(18)
+    for num, title, who in (
+        ("1", "Strategy", "Kalan Abheedi, Royce Chalmer"),
+        ("2", "Finance", "Amanda Sully, Jann Van Huysen"),
+        ("3", "Projects", "Jeannette Moss, Elena Song"),
+    ):
+        _badge(right, num)
+        t = right.add_paragraph()
+        t.paragraph_format.space_before = Pt(8)
+        t.paragraph_format.space_after = Pt(2)
+        r = t.add_run(title)
+        r.bold = True
+        r.font.size = Pt(20)
+        r.font.color.rgb = DARK
+        a = right.add_paragraph()
+        a.paragraph_format.space_after = Pt(22)
+        r = a.add_run(who)
+        r.font.color.rgb = GREY
+        r.font.size = Pt(10)
     band = _fixed_table(doc, [9.1])
     cell = band.rows[0].cells[0]
     _shade_cell(cell, BLUE_HEX)
+    leaf = cell.paragraphs[0]
+    leaf.add_run("[img:cover_logo]")
     _blue_para(cell, "{{ intro_title }}", size=18, bold=True)
     _blue_para(cell, "{{ intro_text }}", size=11)
     _blue_para(cell, "{{ intro_extra }}", size=10)
     doc.add_page_break()
 
     # ---- Page 3: Strategy ----
-    strategy = _fixed_table(doc, [2.7, 6.4])
+    strategy = _fixed_table(doc, [3.2, 5.9])
     left, right = strategy.rows[0].cells
     _photo_cell(left, "[img:strategy_photo]")
-    _section_header(right, "STRATEGY", "KALAN ABHEEDI, ROYCE CHALMER")
+    _section_heading(right, "Strategy")
+    _authors_line(right, "Kalan Abheedi, Royce Chalmer")
     stat = right.add_paragraph()
     run = stat.add_run("{{ strategy_funds_2029 }}")
     run.bold = True
-    run.font.size = Pt(15)
+    run.font.size = Pt(18)
     run.font.color.rgb = BLUE
     src = right.add_paragraph()
     run = src.add_run("from {{ strategy_funds_2028 }}")
     run.font.color.rgb = GREY
+    run.font.size = Pt(12)
     note = right.add_paragraph()
     run = note.add_run("(funds raised annually in {{ report_year }} vs. last year)")
     run.font.color.rgb = GREY
     run.font.size = Pt(9)
+    note.paragraph_format.space_after = Pt(14)
     stat = right.add_paragraph()
     run = stat.add_run("{{ strategy_people_2029 }}")
     run.bold = True
-    run.font.size = Pt(15)
+    run.font.size = Pt(18)
     run.font.color.rgb = BLUE
     src = right.add_paragraph()
     run = src.add_run("from {{ strategy_people_2028 }}")
     run.font.color.rgb = GREY
+    run.font.size = Pt(12)
     note = right.add_paragraph()
     run = note.add_run("(people served annually {{ report_year }} vs. last year)")
     run.font.color.rgb = GREY
@@ -858,68 +931,74 @@ def build_magazine_template() -> bytes:
     band = _fixed_table(doc, [9.1])
     cell = band.rows[0].cells[0]
     _shade_cell(cell, BLUE_HEX)
-    _blue_para(cell, "Looking Back at {{ report_year }}...", size=16, bold=True)
-    _blue_para(cell, "OUTREACH", size=12, bold=True)
-    _blue_para(cell, "{{ outreach_emails }} EMAILS", size=11)
-    _blue_para(cell, "{{ outreach_conversations }} CONVERSATIONS", size=11)
-    _blue_para(cell, "{{ outreach_speeches }} SPEECHES", size=11)
-    _blue_para(cell, "VOLUNTEER RETENTION", size=12, bold=True)
-    _blue_para(cell, "{{ volunteer_growth }} GROWTH", size=11)
-    _blue_para(cell, "{{ volunteer_hours }} HOURS", size=11)
-    _blue_para(cell, "{{ volunteer_party }}", size=11)
-    _blue_para(cell, "AWARENESS", size=12, bold=True)
-    _blue_para(cell, "DIGITAL MARKETING", size=11)
-    _blue_para(cell, "GUERILLA MARKETING", size=11)
-    _blue_para(cell, "CAMPAIGN ADVERTISING", size=11)
+    _blue_para(cell, "Looking Back at {{ report_year }}...", size=18, bold=True)
+    _metric_table(
+        cell,
+        ["OUTREACH", "VOLUNTEER RETENTION", "AWARENESS"],
+        [
+            [("{{ outreach_emails }}", "Emails"), ("{{ volunteer_growth }}", "Growth"), ("DIGITAL", "Marketing")],
+            [("{{ outreach_conversations }}", "Conversations"), ("{{ volunteer_hours }}", "Hours"), ("GUERILLA", "Marketing")],
+            [("{{ outreach_speeches }}", "Speeches"), ("{{ volunteer_party }}", "Great Party"), ("CAMPAIGN", "Advertising")],
+        ],
+    )
     doc.add_page_break()
 
     # ---- Page 4: Finance ----
-    finance = _fixed_table(doc, [2.7, 6.4])
+    finance = _fixed_table(doc, [3.2, 5.9])
     left, right = finance.rows[0].cells
     _photo_cell(left, "[img:finance_photo]")
-    _section_header(right, "FINANCE", "AMANDA SULLY, JANN VAN HUYSEN")
+    _section_heading(right, "Finance")
+    _authors_line(right, "Amanda Sully, Jann Van Huysen")
     src = right.add_paragraph()
     run = src.add_run("Sources of Funding")
     run.bold = True
-    run.font.size = Pt(12)
+    run.font.size = Pt(14)
+    run.font.color.rgb = BLUE
     src = right.add_paragraph()
     src.alignment = WD_ALIGN_PARAGRAPH.CENTER
     src.add_run("[img:finance_sources]")
     src = right.add_paragraph()
     run = src.add_run("Annual Expenses")
     run.bold = True
-    run.font.size = Pt(12)
+    run.font.size = Pt(14)
+    run.font.color.rgb = BLUE
     src = right.add_paragraph()
     src.alignment = WD_ALIGN_PARAGRAPH.CENTER
     src.add_run("[img:finance_expenses]")
     band = _fixed_table(doc, [9.1])
     cell = band.rows[0].cells[0]
     _shade_cell(cell, BLUE_HEX)
-    _blue_para(cell, "Additional Remarks", size=16, bold=True)
-    _blue_para(cell, "EVENTS: {{ finance_events }}", size=11)
-    _blue_para(cell, "CONFERENCES: {{ finance_conferences }}", size=11)
-    _blue_para(cell, "DIGITAL MARKETING: {{ finance_digital }}", size=11)
+    _blue_para(cell, "Additional Remarks", size=18, bold=True)
+    _blue_para(cell, "EVENTS", size=11, bold=True)
+    _blue_para(cell, "{{ finance_events }}", size=10)
+    _blue_para(cell, "CONFERENCES", size=11, bold=True)
+    _blue_para(cell, "{{ finance_conferences }}", size=10)
+    _blue_para(cell, "DIGITAL MARKETING", size=11, bold=True)
+    _blue_para(cell, "{{ finance_digital }}", size=10)
     doc.add_page_break()
 
     # ---- Page 5: Projects ----
-    projects = _fixed_table(doc, [2.7, 6.4])
+    projects = _fixed_table(doc, [3.2, 5.9])
     left, right = projects.rows[0].cells
     _photo_cell(left, "[img:projects_photo]")
-    _section_header(right, "PROJECTS", "JEANNETTE MOSS, ELENA SONG")
+    _section_heading(right, "Projects")
+    _authors_line(right, "Jeannette Moss, Elena Song")
     h = right.add_paragraph()
     run = h.add_run("Annual Fundraiser")
     run.bold = True
-    run.font.size = Pt(12)
+    run.font.size = Pt(14)
+    run.font.color.rgb = BLUE
     right.add_paragraph("{{ projects_fundraiser }}")
     h = right.add_paragraph()
     run = h.add_run("#itsnottheflu")
     run.bold = True
-    run.font.size = Pt(12)
+    run.font.size = Pt(14)
+    run.font.color.rgb = BLUE
     right.add_paragraph("{{ projects_campaign }}")
     band = _fixed_table(doc, [9.1])
     cell = band.rows[0].cells[0]
     _shade_cell(cell, BLUE_HEX)
-    _blue_para(cell, "{{ projects_handwash_title }}", size=16, bold=True)
+    _blue_para(cell, "{{ projects_handwash_title }}", size=18, bold=True)
     _blue_para(cell, "{{ projects_handwash_text }}", size=11)
     _blue_para(cell, "{{ projects_checklist }}", size=11)
     photo2 = cell.add_paragraph()

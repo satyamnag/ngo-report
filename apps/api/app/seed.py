@@ -131,7 +131,7 @@ def _default_images() -> dict[str, tuple[bytes, str]]:
         draw = ImageDraw.Draw(img)
         cx, cy, r = 220, 230, 170
         start = 0
-        colors = ["14508C", "2E86AB", "86AF49", "E0A93E", "C97B63", "9B9B9B"]
+        colors = ["2A2A2A", "5B8DEF", "7BA3F5", "9DB8F8", "BDD0FB", "DCE8FD"]
         for value, col in zip(values, colors):
             sweep = int(value / 100.0 * 360)
             draw.pieslice([cx - r, cy - r, cx + r, cy + r], start, start + sweep, fill="#" + col)
