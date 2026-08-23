@@ -349,6 +349,51 @@ def ai_generate(
     return {"applied": True, "plan": plan}
 
 
+@router.get("/{project_id}/readiness")
+def project_readiness(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Report which required template fields are still missing so the UI can
+    warn before generating (validate-data-before-render pattern)."""
+    org = _get_org(db, current_user)
+    project = _get_project(db, org, project_id)
+    template = db.get(Template, project.template_id)
+
+    fields = [
+        f
+        for group in (template.schema_json or {}).get("fields", [])
+        for f in group.get("fields", [])
+        if f.get("type") != "image"
+    ]
+    ij = project.input_json or {}
+
+    def _value(path: str | None):
+        if not path:
+            return None
+        node = ij
+        for key in path.split("."):
+            if isinstance(node, dict) and node.get(key) not in (None, ""):
+                node = node[key]
+            else:
+                return None
+        return node
+
+    missing = [
+        f.get("label") or f.get("name")
+        for f in fields
+        if f.get("required") and _value(f.get("path")) is None
+    ]
+    filled = sum(1 for f in fields if _value(f.get("path")) is not None)
+    return {
+        "required_missing": missing,
+        "filled_fields": filled,
+        "total_fields": len(fields),
+        "ready": not missing,
+    }
+
+
 @router.delete("/{project_id}", status_code=204)
 def delete_project(
     project_id: str,

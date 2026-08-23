@@ -208,6 +208,11 @@ export default function HomePage() {
             <strong>Your data is 100% safe.</strong> Documents are stored on
             your own server, used only to build your report, and never shared.
           </p>
+          <div className="notice">
+            <strong>AI content is a draft.</strong> Always review it carefully
+            before publishing — verify every number and name against your own
+            records.
+          </div>
         </div>
 
         <div className="home-reports">

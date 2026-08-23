@@ -39,6 +39,12 @@ export default function ProjectDetailPage() {
   const [agentMessage, setAgentMessage] = useState("");
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
+  const [readiness, setReadiness] = useState<{
+    required_missing: string[];
+    filled_fields: number;
+    total_fields: number;
+    ready: boolean;
+  } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -48,6 +54,11 @@ export default function ProjectDetailPage() {
     setProject(p);
     const t = await api<Template>(`/api/templates/${p.template_id}/schema`);
     setTemplate(t);
+    api<{ required_missing: string[]; filled_fields: number; total_fields: number; ready: boolean }>(
+      `/api/projects/${pid}/readiness`
+    )
+      .then(setReadiness)
+      .catch(() => {});
     try {
       const g = await api<Generation>(`/api/projects/${pid}/generations/latest`);
       setGeneration(g);
@@ -295,6 +306,21 @@ export default function ProjectDetailPage() {
 
             <div className="card">
               <h2>Generate &amp; download</h2>
+              {readiness && !readiness.ready && (
+                <div className="notice" style={{ background: "#fff4e0", borderColor: "#f0d9a8", borderLeftColor: "#e0a93e" }}>
+                  <strong>Missing required fields:</strong>{" "}
+                  {readiness.required_missing.slice(0, 6).join(", ")}
+                  {readiness.required_missing.length > 6
+                    ? ` (+${readiness.required_missing.length - 6} more)`
+                    : ""}
+                  . The report will render with blank sections until you fill them.
+                </div>
+              )}
+              {readiness && readiness.ready && (
+                <p className="muted">
+                  {readiness.filled_fields}/{readiness.total_fields} fields filled — ready to generate.
+                </p>
+              )}
               <div className="row">
                 <button onClick={generate} disabled={busy || !!running}>
                   {running ? "Generating…" : busy ? "Starting…" : "Generate report"}
@@ -305,6 +331,11 @@ export default function ProjectDetailPage() {
                     {running ? "…" : ""}
                   </span>
                 )}
+              </div>
+              <div className="notice">
+                <strong>AI content is a draft.</strong> Always review it carefully
+                before publishing — verify every number and name against your
+                own records (human-review best practice).
               </div>
               {generation?.error && (
                 <p className="error">Generation error: {generation.error}</p>
