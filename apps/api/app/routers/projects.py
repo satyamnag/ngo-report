@@ -337,6 +337,11 @@ def ai_generate(
         plan = generate_content_plan(profile, template.schema_json)
     except AiKeyMissingError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="The AI returned an unreadable response. Please try again.",
+        ) from exc
 
     merged = merge_plan(project.input_json or {}, plan)
     project.input_json = merged

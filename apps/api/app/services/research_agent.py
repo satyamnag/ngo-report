@@ -61,14 +61,9 @@ def search_web(query: str) -> str:
 
 
 def _extract_json(text: str) -> dict:
-    cleaned = text.strip()
-    fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", cleaned, re.DOTALL)
-    if fence:
-        cleaned = fence.group(1)
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Agent returned invalid JSON: {exc}") from exc
+    from ..services.ai_service import parse_agent_json
+
+    return parse_agent_json(text)
 
 
 def run_research_agent(

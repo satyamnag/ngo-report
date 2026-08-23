@@ -300,6 +300,11 @@ def research_generate(
         plan = run_research_agent(profile, corpus, template.schema_json, user_prompt=user_prompt)
     except AiKeyMissingError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="The AI returned an unreadable response. Please try again.",
+        ) from exc
 
     project.input_json = merge_plan(project.input_json or {}, plan)
     db.commit()

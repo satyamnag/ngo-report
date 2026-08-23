@@ -94,15 +94,61 @@ def input_json_to_profile(input_json: dict) -> dict:
 
 
 def _extract_json(text: str) -> dict:
-    """Parse model output as JSON, tolerating markdown code fences."""
-    cleaned = text.strip()
+    """Parse model output as JSON, tolerating markdown fences and common
+    lenient-JSON mistakes (unquoted keys, trailing commas) via json5."""
+    return parse_agent_json(text)
+
+
+def parse_agent_json(text: str) -> dict:
+    """Robustly parse an agent's JSON output.
+
+    Order: strict JSON -> balanced-brace extraction (strict + json5) -> json5
+    on the whole string. Raises ValueError only if nothing parses.
+    """
+    import json as _json
+
+    cleaned = (text or "").strip()
     fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", cleaned, re.DOTALL)
     if fence:
-        cleaned = fence.group(1)
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"OpenAI returned invalid JSON: {exc}") from exc
+        cleaned = fence.group(1).strip()
+
+    def _strict(s: str):
+        try:
+            return _json.loads(s)
+        except Exception:
+            return None
+
+    def _lenient(s: str):
+        try:
+            import json5
+
+            return json5.loads(s)
+        except Exception:
+            return None
+
+    d = _strict(cleaned)
+    if d is not None:
+        return d
+
+    # Try each substring starting at an opening brace and ending at the last
+    # closing brace (handles leading prose or stray characters).
+    candidates = []
+    for idx, ch in enumerate(cleaned):
+        if ch == "{":
+            candidates.append(cleaned[idx:])
+    for candidate in candidates:
+        d = _strict(candidate)
+        if d is not None:
+            return d
+        d = _lenient(candidate)
+        if d is not None:
+            return d
+
+    d = _lenient(cleaned)
+    if d is not None:
+        return d
+
+    raise ValueError("Agent returned invalid JSON")
 
 
 def generate_content_plan(org_profile: dict, template_schema: dict) -> dict:
