@@ -371,6 +371,12 @@ def delete_project(
             continue
 
     record_audit(db, "project.delete", user_id=current_user.id, project_id=project.id)
+    # audit_logs reference projects without cascade; remove them explicitly.
+    from ..models import AuditLog
+
+    db.query(AuditLog).filter(AuditLog.project_id == project.id).delete(
+        synchronize_session=False
+    )
     db.delete(project)
     db.commit()
 
