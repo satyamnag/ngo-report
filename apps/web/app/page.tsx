@@ -1,6 +1,7 @@
 "use client";
 
 import Nav from "@/components/Nav";
+import TemplatePreview from "@/components/TemplatePreview";
 import { api, type Project, type Template } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -79,17 +80,21 @@ export default function HomePage() {
           <div className="row">
             <div style={{ flex: 1 }}>
               <label htmlFor="home-template">Template</label>
-              <select
-                id="home-template"
-                value={templateId}
-                onChange={(e) => setTemplateId(e.target.value)}
-              >
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} (v{t.version})
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <select
+                  id="home-template"
+                  style={{ flex: 1 }}
+                  value={templateId}
+                  onChange={(e) => setTemplateId(e.target.value)}
+                >
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} (v{t.version})
+                    </option>
+                  ))}
+                </select>
+                <TemplatePreview templateId={templateId} />
+              </div>
             </div>
             <div style={{ flex: 1 }}>
               <label htmlFor="home-title">Report Title</label>

@@ -2,6 +2,7 @@
 
 import Nav from "@/components/Nav";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import TemplatePreview from "@/components/TemplatePreview";
 import { api, AUTH_ENABLED, getToken, type Project, type Template } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -70,16 +71,20 @@ export default function ProjectsPage() {
           <div className="row">
             <div style={{ flex: 1 }}>
               <label>Template</label>
-              <select
-                value={templateId}
-                onChange={(e) => setTemplateId(e.target.value)}
-              >
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} (v{t.version})
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <select
+                  style={{ flex: 1 }}
+                  value={templateId}
+                  onChange={(e) => setTemplateId(e.target.value)}
+                >
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} (v{t.version})
+                    </option>
+                  ))}
+                </select>
+                <TemplatePreview templateId={templateId} />
+              </div>
             </div>
             <div style={{ flex: 1 }}>
               <label>Report title</label>

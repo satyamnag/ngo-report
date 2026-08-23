@@ -4,6 +4,7 @@ import json
 import uuid
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -61,6 +62,42 @@ def get_schema(
     return TemplateSchemaOut(
         id=template.id, name=template.name, schema_json=template.schema_json
     )
+
+
+@router.get("/{template_id}/preview")
+def template_preview(
+    template_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    """Render the template's first page as a PNG for the preview (cached)."""
+    org = _get_org(db, current_user)
+    template = db.query(Template).filter_by(id=template_id, org_id=org.id).first()
+    if template is None:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    storage = get_storage()
+    cache_key = f"templates/{template.id}/preview.png"
+    if storage.exists(cache_key):
+        return Response(content=storage.get(cache_key).data, media_type="image/png")
+
+    from ..services.generation import build_defaulted_context, docx_to_pdf, render_report
+
+    docx_bytes = storage.get(template.file_key).data
+    context = build_defaulted_context(template.schema_json, {})
+    rendered = render_report(docx_bytes, context, lambda _name: None)
+    pdf = docx_to_pdf(rendered)
+
+    import fitz
+
+    pdf_doc = fitz.open(stream=pdf, filetype="pdf")
+    page = pdf_doc[0]
+    pix = page.get_pixmap(dpi=110)
+    png = pix.tobytes("png")
+    pdf_doc.close()
+
+    storage.put(cache_key, png, "image/png")
+    return Response(content=png, media_type="image/png")
 
 
 @router.post("", response_model=TemplateOut, status_code=201)
