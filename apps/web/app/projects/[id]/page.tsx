@@ -228,8 +228,15 @@ export default function ProjectDetailPage() {
               <h2>Build the report with the AI agent</h2>
               <p className="muted">
                 The agent researches your granted sources and uploaded documents,
-                then drafts the entire report into the form above.
+                then drafts the entire report into the form above — it decides
+                every line, where each fact fits, and where every image goes.
               </p>
+              <div className="notice">
+                <strong>100% safe &amp; optional.</strong> The agent only uses
+                the public pages you grant and the documents you upload. It
+                never invents facts, never copies third-party content, and
+                leaves anything uncertain as a placeholder for you to fill.
+              </div>
               <button onClick={agentBuild} disabled={agentBusy}>
                 {agentBusy ? "Agent is researching…" : "Build report with AI agent"}
               </button>

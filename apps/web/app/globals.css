@@ -181,6 +181,20 @@ label {
   color: var(--danger);
   font-size: 13px;
 }
+.notice {
+  background: #eaf6f4;
+  border: 1px solid #bfe3de;
+  border-left: 4px solid var(--teal);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 10px 0;
+}
+.notice strong {
+  color: var(--teal);
+}
 .muted {
   color: var(--grey);
   font-size: 13px;

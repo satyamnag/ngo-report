@@ -83,8 +83,16 @@ export default function SourcesCard({ project }: { project: Project }) {
       <h2>Grant the agent read access</h2>
       <p className="muted">
         Enter your official website and social pages. The agent reads them
-        read-only (public pages only) to gather this year&apos;s data.
+        read-only (public pages only) to gather this year&apos;s data. All
+        sources are <strong>optional</strong> — add only what you&apos;re
+        comfortable sharing.
       </p>
+      <div className="notice">
+        <strong>Your data is 100% safe.</strong> We only read the public pages
+        you explicitly grant here (read-only, never modified). Your documents
+        stay on your own server, are never shared with anyone, and are deleted
+        if you delete the report. Nothing private is ever gathered.
+      </div>
       {PLATFORMS.map((p) => {
         const status = sources.find((s) => s.platform === p.key);
         return (

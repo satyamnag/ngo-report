@@ -59,9 +59,14 @@ export default function DocumentsCard({ project }: { project: Project }) {
     <div className="card">
       <h2>Research documents</h2>
       <p className="muted">
-        Attach txt, Word, Excel, PowerPoint, PDF, or images. The agent reads
-        them to build your report.
+        Attach txt, Word, Excel, PowerPoint, PDF, or images (optional). The
+        agent reads them to build your report.
       </p>
+      <div className="notice">
+        <strong>Your documents stay private.</strong> Files are stored on your
+        own server, used only to build your report, and deleted when you delete
+        the report. They are never shared with third parties.
+      </div>
       <input
         type="file"
         accept={ACCEPT}
