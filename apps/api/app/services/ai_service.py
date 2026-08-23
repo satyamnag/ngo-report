@@ -151,8 +151,20 @@ def parse_agent_json(text: str) -> dict:
     raise ValueError("Agent returned invalid JSON")
 
 
+def _text_fields(schema_json: dict) -> list[dict]:
+    """All non-image fields in the template schema (name, label, type, path)."""
+    fields = []
+    for group in (schema_json or {}).get("fields", []):
+        for field in group.get("fields", []):
+            if field.get("type") == "image":
+                continue
+            fields.append(field)
+    return fields
+
+
 def generate_content_plan(org_profile: dict, template_schema: dict) -> dict:
-    """Call OpenAI with the agent prompt + org profile, return the plan JSON.
+    """Call OpenAI with the agent prompt + org profile + schema, return
+    {field_name: value} for every non-image template field.
 
     Retries once with a corrective instruction if the model returns invalid
     JSON, then falls back to the strict error path."""
@@ -167,7 +179,11 @@ def generate_content_plan(org_profile: dict, template_schema: dict) -> dict:
     client = OpenAI(api_key=settings.openai_api_key)
     system = load_prompt()
     user = json.dumps(
-        {"org_profile": org_profile, "template_schema": template_schema or {}},
+        {
+            "org_profile": org_profile,
+            "template_schema": template_schema or {},
+            "source_corpus": "",
+        },
         indent=2,
     )
 
@@ -197,6 +213,50 @@ def generate_content_plan(org_profile: dict, template_schema: dict) -> dict:
                 )
                 continue
             raise
+
+
+def apply_field_values(input_json: dict, schema_json: dict, values: dict) -> dict:
+    """Write agent values into input_json at each field's path.
+
+    Only fields present in the template schema are touched; empty/null values
+    are ignored; factual fields are only set when currently empty so real data
+    is never overwritten with less-informed AI output."""
+    merged = dict(input_json or {})
+
+    def _set(path: str, value) -> None:
+        keys = path.split(".")
+        node = merged
+        for key in keys[:-1]:
+            node = node.setdefault(key, {})
+        node[keys[-1]] = value
+
+    def _get(path: str):
+        node = merged
+        for key in path.split("."):
+            if isinstance(node, dict) and key in node:
+                node = node[key]
+            else:
+                return None
+        return node
+
+    for field in _text_fields(schema_json):
+        name = field.get("name")
+        path = field.get("path")
+        if not name or not path or name not in values:
+            continue
+        value = values[name]
+        if value is None:
+            continue
+        if field.get("type") == "number":
+            if _get(path) in (None, ""):
+                try:
+                    _set(path, int(str(value).replace(",", "")))
+                except (TypeError, ValueError):
+                    _set(path, str(value))
+        elif isinstance(value, str) and value.strip():
+            _set(path, value.strip())
+
+    return merged
 
 
 # Narrative fields the reviewer may polish (facts/numbers/names preserved).

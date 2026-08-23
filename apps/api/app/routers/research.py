@@ -290,7 +290,7 @@ def research_generate(
     project = _get_project(db, org, project_id)
     template = db.get(Template, project.template_id)
 
-    from ..services.ai_service import AiKeyMissingError, input_json_to_profile, merge_plan
+    from ..services.ai_service import AiKeyMissingError, apply_field_values, input_json_to_profile
     from ..services.research_agent import run_research_agent
 
     steps = []
@@ -316,7 +316,7 @@ def research_generate(
         ) from exc
     steps.append("Ran the AI research agent")
 
-    project.input_json = merge_plan(project.input_json or {}, plan)
+    project.input_json = apply_field_values(project.input_json or {}, template.schema_json, plan)
     db.commit()
     steps.append("Merged the content plan into the report")
     record_audit(db, "project.research_generate", user_id=current_user.id, project_id=project.id)

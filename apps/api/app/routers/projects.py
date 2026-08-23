@@ -327,9 +327,9 @@ def ai_generate(
 
     from ..services.ai_service import (
         AiKeyMissingError,
+        apply_field_values,
         generate_content_plan,
         input_json_to_profile,
-        merge_plan,
     )
 
     profile = input_json_to_profile(project.input_json or {})
@@ -343,8 +343,7 @@ def ai_generate(
             detail="The AI returned an unreadable response. Please try again.",
         ) from exc
 
-    merged = merge_plan(project.input_json or {}, plan)
-    project.input_json = merged
+    project.input_json = apply_field_values(project.input_json or {}, template.schema_json, plan)
     db.commit()
     record_audit(db, "project.ai_generate", user_id=current_user.id, project_id=project.id)
     return {"applied": True, "plan": plan}
