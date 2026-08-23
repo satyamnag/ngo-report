@@ -71,7 +71,12 @@ def _extract_json(text: str) -> dict:
         raise ValueError(f"Agent returned invalid JSON: {exc}") from exc
 
 
-def run_research_agent(org_profile: dict, corpus_text: str, template_schema: dict) -> dict:
+def run_research_agent(
+    org_profile: dict,
+    corpus_text: str,
+    template_schema: dict,
+    user_prompt: str | None = None,
+) -> dict:
     """Run the research agent and return the content plan JSON."""
     if not settings.openai_api_key:
         from ..services.ai_service import AiKeyMissingError
@@ -110,6 +115,7 @@ def run_research_agent(org_profile: dict, corpus_text: str, template_schema: dic
             "org_profile": org_profile,
             "template_schema": template_schema or {},
             "source_corpus": (corpus_text or "")[: 120_000],
+            "user_instructions": (user_prompt or "")[: 4000] or None,
         },
         indent=2,
     )

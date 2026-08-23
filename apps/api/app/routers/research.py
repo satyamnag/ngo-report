@@ -295,8 +295,9 @@ def research_generate(
 
     profile = input_json_to_profile(project.input_json or {})
     corpus = _build_corpus(db, project)
+    user_prompt = (project.input_json or {}).get("_user_prompt")
     try:
-        plan = run_research_agent(profile, corpus, template.schema_json)
+        plan = run_research_agent(profile, corpus, template.schema_json, user_prompt=user_prompt)
     except AiKeyMissingError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 

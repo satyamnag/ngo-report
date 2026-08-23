@@ -195,6 +195,97 @@ label {
 .notice strong {
   color: var(--teal);
 }
+
+/* Home screen */
+.home {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px 32px;
+  text-align: center;
+}
+.home h1 {
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+.home-sub {
+  color: var(--grey);
+  font-size: 15px;
+  margin: 0 0 28px;
+}
+.home-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  text-align: left;
+  box-shadow: 0 6px 24px rgba(11, 110, 107, 0.06);
+}
+.prompt-box {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.prompt-box textarea {
+  border: none;
+  border-radius: 0;
+  resize: vertical;
+  background: transparent;
+  padding: 12px 14px;
+}
+.prompt-box textarea:focus {
+  outline: none;
+}
+.prompt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: #fafcfc;
+}
+.attach-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  color: var(--teal);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+}
+.attach-btn:hover {
+  border-color: var(--teal);
+  background: #f0f7f6;
+}
+.file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.file-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f7f6;
+  border: 1px solid #bfe3de;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.file-list button {
+  padding: 0 6px;
+  font-size: 14px;
+  background: transparent;
+  color: var(--danger);
+  border: none;
+}
 .muted {
   color: var(--grey);
   font-size: 13px;
