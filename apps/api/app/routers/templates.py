@@ -1,5 +1,6 @@
 """Template routes: list, schema, upload (with validation)."""
 
+import io
 import json
 import uuid
 
@@ -121,11 +122,22 @@ def template_preview(
     pdf = docx_to_pdf(rendered)
 
     import fitz
+    from PIL import Image
 
     pdf_doc = fitz.open(stream=pdf, filetype="pdf")
-    page = pdf_doc[0]
-    pix = page.get_pixmap(dpi=110)
-    png = pix.tobytes("png")
+    page_images = [page.get_pixmap(dpi=100) for page in pdf_doc]
+    if not page_images:
+        raise HTTPException(status_code=500, detail="Could not render template preview")
+    width = page_images[0].width
+    height = sum(p.height for p in page_images)
+    combined = Image.new("RGB", (width, height), (255, 255, 255))
+    y = 0
+    for p in page_images:
+        combined.paste(Image.open(io.BytesIO(p.tobytes("png"))), (0, y))
+        y += p.height
+    png_buf = io.BytesIO()
+    combined.save(png_buf, format="PNG")
+    png = png_buf.getvalue()
     pdf_doc.close()
 
     storage.put(cache_key, png, "image/png")
