@@ -21,8 +21,8 @@ from docx.oxml.ns import nsdecls, qn
 from docx.shared import RGBColor
 
 # The accent color the templates are built with (a.k.a. the recolor sentinel).
-SENTINEL = RGBColor(0x0B, 0x6E, 0x6B)
-SENTINEL_HEX = "0B6E6B"
+SENTINEL = RGBColor(0x14, 0x50, 0x8C)
+SENTINEL_HEX = "14508C"
 
 HEX_RE = re.compile(r"^#?([0-9A-Fa-f]{6})$")
 

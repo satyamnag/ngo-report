@@ -33,6 +33,15 @@ DEFAULT_IMAGE_WIDTHS = {
     "hero": 6.0,
     "chart_funding": 5.5,
     "chart": 5.5,
+    "cover_logo": 0.9,
+    "cover_photo": 2.6,
+    "contents_photo": 2.6,
+    "strategy_photo": 2.6,
+    "finance_photo": 2.6,
+    "projects_photo": 2.6,
+    "projects_photo2": 2.6,
+    "finance_sources": 2.4,
+    "finance_expenses": 2.4,
 }
 
 

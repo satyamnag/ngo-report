@@ -101,6 +101,54 @@ def _default_images() -> dict[str, tuple[bytes, str]]:
         photo.save(buf, format="PNG")
         images[f"program_{index}"] = (buf.getvalue(), "image/png")
 
+    # Magazine template: black-and-white photo placeholders + charts.
+    grey_palette = [("COVER", 150), ("CONTENTS", 140), ("STRATEGY", 160), ("FINANCE", 145), ("PROJECTS", 155), ("CAMPAIGN", 135)]
+    for label, gv in grey_palette:
+        photo = Image.new("RGB", (1400, 1800), (gv, gv, gv))
+        draw = ImageDraw.Draw(photo)
+        draw.rectangle([0, 0, 1400, 1800], fill=(gv, gv, gv))
+        draw.text((700, 900), f"{label} PHOTO\n(black & white)", fill=(235, 235, 235), anchor="mm", font=_font(72))
+        buf = io.BytesIO()
+        photo.save(buf, format="PNG")
+        key = {"COVER": "cover_photo", "CONTENTS": "contents_photo", "STRATEGY": "strategy_photo",
+               "FINANCE": "finance_photo", "PROJECTS": "projects_photo", "CAMPAIGN": "projects_photo2"}[label]
+        images[key] = (buf.getvalue(), "image/png")
+
+    # Leaf-like logo for the magazine cover.
+    leaf = Image.new("RGBA", (600, 600), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(leaf)
+    draw.ellipse([60, 120, 420, 480], fill=(0xFF, 0xFF, 0xFF, 255))
+    draw.ellipse([180, 120, 540, 480], fill=(0xFF, 0xFF, 0xFF, 255))
+    draw.polygon([(300, 60), (120, 540), (300, 540)], fill=(0xFF, 0xFF, 0xFF, 255))
+    buf = io.BytesIO()
+    leaf.save(buf, format="PNG")
+    images["cover_logo"] = (buf.getvalue(), "image/png")
+
+    def _donut(values, title):
+        img = Image.new("RGB", (700, 460), (255, 255, 255))
+        draw = ImageDraw.Draw(img)
+        cx, cy, r = 220, 230, 170
+        start = 0
+        colors = ["14508C", "2E86AB", "86AF49", "E0A93E", "C97B63", "9B9B9B"]
+        for value, col in zip(values, colors):
+            sweep = int(value / 100.0 * 360)
+            draw.pieslice([cx - r, cy - r, cx + r, cy + r], start, start + sweep, fill="#" + col)
+            start += sweep
+        draw.ellipse([cx - 60, cy - 60, cx + 60, cy + 60], fill=(255, 255, 255))
+        draw.text((cx, cy), "100%", fill=(30, 30, 30), anchor="mm", font=_font(28))
+        y = 60
+        for value, col in zip(values, colors):
+            draw.rectangle([460, y, 500, y + 22], fill="#" + col)
+            draw.text((510, y + 11), f"{value}%", fill=(30, 30, 30), anchor="lm", font=_font(24))
+            y += 34
+        draw.text((350, 30), title, fill=(30, 30, 30), anchor="mm", font=_font(36))
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return buf.getvalue()
+
+    images["finance_sources"] = (_donut([30, 30, 15, 10, 10, 5], "Sources of Funding"), "image/png")
+    images["finance_expenses"] = (_donut([30, 29, 21, 15, 5, 0], "Annual Expenses"), "image/png")
+
     return images
 
 

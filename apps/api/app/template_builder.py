@@ -652,6 +652,326 @@ PUBLICATION_SCHEMA = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Magazine-style template (matches the described 5-page preview):
+
+from docx.oxml import OxmlElement  # noqa: E402
+from docx.oxml.ns import qn  # noqa: E402
+
+BLUE = RGBColor(0x14, 0x50, 0x8C)
+BLUE_HEX = "14508C"
+WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+
+
+def _shade_cell(cell, hex_fill: str) -> None:
+    tcPr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), hex_fill)
+    tcPr.append(shd)
+
+
+def _fixed_table(doc, widths: list[float]):
+    table = doc.add_table(rows=1, cols=len(widths))
+    table.autofit = False
+    layout = OxmlElement("w:tblLayout")
+    layout.set(qn("w:type"), "fixed")
+    table._tbl.tblPr.append(layout)
+    for cell, width in zip(table.rows[0].cells, widths):
+        cell.width = Inches(width)
+    return table
+
+
+def _white_run(paragraph, text: str, size: int = 11, bold: bool = False):
+    run = paragraph.add_run(text)
+    run.font.color.rgb = WHITE
+    run.font.size = Pt(size)
+    run.bold = bold
+    return run
+
+
+def _blue_para(cell, text: str, size: int = 11, bold: bool = False, space: int = 5):
+    p = cell.add_paragraph()
+    _white_run(p, text, size=size, bold=bold)
+    p.paragraph_format.space_after = Pt(space)
+    return p
+
+
+def _photo_cell(cell, marker: str) -> None:
+    p = cell.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run(marker)
+
+
+def _section_header(cell, title: str, authors: str | None = None) -> None:
+    p = cell.paragraphs[0]
+    run = p.add_run(title)
+    run.bold = True
+    run.font.size = Pt(16)
+    run.font.color.rgb = BLUE
+    if authors:
+        a = cell.add_paragraph()
+        run = a.add_run(authors)
+        run.font.color.rgb = GREY
+        run.font.size = Pt(9)
+        a.paragraph_format.space_after = Pt(8)
+
+
+def _circle_number(cell, text: str) -> None:
+    p = cell.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run(text)
+    run.bold = True
+    run.font.size = Pt(15)
+    run.font.color.rgb = BLUE
+    p.paragraph_format.space_after = Pt(6)
+
+
+def _toc_item(cell, label: str, authors: str) -> None:
+    p = cell.add_paragraph()
+    run = p.add_run(label)
+    run.bold = True
+    run.font.size = Pt(12)
+    p.paragraph_format.space_after = Pt(2)
+    a = cell.add_paragraph()
+    run = a.add_run(authors)
+    run.font.color.rgb = GREY
+    run.font.size = Pt(9)
+    a.paragraph_format.space_after = Pt(8)
+
+
+def build_magazine_template() -> bytes:
+    doc = Document()
+    _style_base(doc)
+    section = doc.sections[0]
+    section.page_width = A4_W
+    section.page_height = A4_H
+    section.left_margin = Inches(0.55)
+    section.right_margin = Inches(0.55)
+    section.top_margin = Inches(0.55)
+    section.bottom_margin = Inches(0.55)
+
+    # ---- Page 1: Cover ----
+    logo_p = doc.add_paragraph()
+    logo_p.add_run("[img:cover_logo]")
+    cover = _fixed_table(doc, [2.7, 6.4])
+    left, right = cover.rows[0].cells
+    _shade_cell(right, BLUE_HEX)
+    _photo_cell(left, "[img:cover_photo]")
+    title_p = right.paragraphs[0]
+    title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _white_run(title_p, "{{ report_year }} ANNUAL REPORT", size=30, bold=True)
+    tag = right.add_paragraph()
+    tag.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _white_run(tag, "{{ tagline }}", size=14)
+    for _ in range(7):
+        right.add_paragraph()
+    authors = right.add_paragraph()
+    authors.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _white_run(authors, "{{ cover_authors }}", size=11)
+    doc.add_page_break()
+
+    # ---- Page 2: Contents & Introduction ----
+    contents = _fixed_table(doc, [2.7, 6.4])
+    left, right = contents.rows[0].cells
+    _photo_cell(left, "[img:contents_photo]")
+    for num in ("1", "2", "3"):
+        _circle_number(left, num)
+    h = right.paragraphs[0]
+    run = h.add_run("CONTENTS")
+    run.bold = True
+    run.font.size = Pt(16)
+    run.font.color.rgb = BLUE
+    _toc_item(right, "1 STRATEGY", "KALAN ABHEEDI, ROYCE CHALMER")
+    _toc_item(right, "2 FINANCE", "AMANDA SULLY, JANN VAN HUYSEN")
+    _toc_item(right, "3 PROJECTS", "JEANNETTE MOSS, ELENA SONG")
+    band = _fixed_table(doc, [9.1])
+    cell = band.rows[0].cells[0]
+    _shade_cell(cell, BLUE_HEX)
+    _blue_para(cell, "{{ intro_title }}", size=18, bold=True)
+    _blue_para(cell, "{{ intro_text }}", size=11)
+    _blue_para(cell, "{{ intro_extra }}", size=10)
+    doc.add_page_break()
+
+    # ---- Page 3: Strategy ----
+    strategy = _fixed_table(doc, [2.7, 6.4])
+    left, right = strategy.rows[0].cells
+    _photo_cell(left, "[img:strategy_photo]")
+    _section_header(right, "STRATEGY", "KALAN ABHEEDI, ROYCE CHALMER")
+    stat = right.add_paragraph()
+    run = stat.add_run("{{ strategy_funds_2029 }}")
+    run.bold = True
+    run.font.size = Pt(15)
+    run.font.color.rgb = BLUE
+    src = right.add_paragraph()
+    run = src.add_run("from {{ strategy_funds_2028 }}")
+    run.font.color.rgb = GREY
+    stat = right.add_paragraph()
+    run = stat.add_run("{{ strategy_people_2029 }}")
+    run.bold = True
+    run.font.size = Pt(15)
+    run.font.color.rgb = BLUE
+    src = right.add_paragraph()
+    run = src.add_run("from {{ strategy_people_2028 }}")
+    run.font.color.rgb = GREY
+    band = _fixed_table(doc, [9.1])
+    cell = band.rows[0].cells[0]
+    _shade_cell(cell, BLUE_HEX)
+    _blue_para(cell, "Looking Back at {{ report_year }}...", size=16, bold=True)
+    _blue_para(cell, "OUTREACH", size=12, bold=True)
+    _blue_para(cell, "{{ outreach_emails }} EMAILS", size=11)
+    _blue_para(cell, "{{ outreach_conversations }} CONVERSATIONS", size=11)
+    _blue_para(cell, "{{ outreach_speeches }} SPEECHES", size=11)
+    _blue_para(cell, "VOLUNTEER RETENTION", size=12, bold=True)
+    _blue_para(cell, "{{ volunteer_growth }} GROWTH", size=11)
+    _blue_para(cell, "{{ volunteer_hours }} HOURS", size=11)
+    _blue_para(cell, "{{ volunteer_party }}", size=11)
+    _blue_para(cell, "AWARENESS", size=12, bold=True)
+    _blue_para(cell, "DIGITAL MARKETING", size=11)
+    _blue_para(cell, "GUERILLA MARKETING", size=11)
+    _blue_para(cell, "CAMPAIGN ADVERTISING", size=11)
+    doc.add_page_break()
+
+    # ---- Page 4: Finance ----
+    finance = _fixed_table(doc, [2.7, 6.4])
+    left, right = finance.rows[0].cells
+    _photo_cell(left, "[img:finance_photo]")
+    _section_header(right, "FINANCE", "AMANDA SULLY, JANN VAN HUYSEN")
+    src = right.add_paragraph()
+    run = src.add_run("Sources of Funding")
+    run.bold = True
+    run.font.size = Pt(12)
+    src = right.add_paragraph()
+    src.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    src.add_run("[img:finance_sources]")
+    src = right.add_paragraph()
+    run = src.add_run("Annual Expenses")
+    run.bold = True
+    run.font.size = Pt(12)
+    src = right.add_paragraph()
+    src.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    src.add_run("[img:finance_expenses]")
+    band = _fixed_table(doc, [9.1])
+    cell = band.rows[0].cells[0]
+    _shade_cell(cell, BLUE_HEX)
+    _blue_para(cell, "Additional Remarks", size=16, bold=True)
+    _blue_para(cell, "EVENTS: {{ finance_events }}", size=11)
+    _blue_para(cell, "CONFERENCES: {{ finance_conferences }}", size=11)
+    _blue_para(cell, "DIGITAL MARKETING: {{ finance_digital }}", size=11)
+    doc.add_page_break()
+
+    # ---- Page 5: Projects ----
+    projects = _fixed_table(doc, [2.7, 6.4])
+    left, right = projects.rows[0].cells
+    _photo_cell(left, "[img:projects_photo]")
+    _section_header(right, "PROJECTS", "JEANNETTE MOSS, ELENA SONG")
+    h = right.add_paragraph()
+    run = h.add_run("Annual Fundraiser")
+    run.bold = True
+    run.font.size = Pt(12)
+    right.add_paragraph("{{ projects_fundraiser }}")
+    h = right.add_paragraph()
+    run = h.add_run("#itsnottheflu")
+    run.bold = True
+    run.font.size = Pt(12)
+    right.add_paragraph("{{ projects_campaign }}")
+    band = _fixed_table(doc, [9.1])
+    cell = band.rows[0].cells[0]
+    _shade_cell(cell, BLUE_HEX)
+    _blue_para(cell, "{{ projects_handwash_title }}", size=16, bold=True)
+    _blue_para(cell, "{{ projects_handwash_text }}", size=11)
+    _blue_para(cell, "{{ projects_checklist }}", size=11)
+    photo2 = cell.add_paragraph()
+    photo2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    photo2.add_run("[img:projects_photo2]")
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+MAGAZINE_SCHEMA = {
+    "title": "Annual Report",
+    "description": "Magazine-style annual report: split cover with photo and solid blue title block, contents & introduction, strategy stats page, finance page with charts, and projects page.",
+    "sections": [
+        {"key": "contents", "label": "Contents & Introduction", "sort": 1},
+        {"key": "strategy", "label": "Strategy", "sort": 2},
+        {"key": "finance", "label": "Finance", "sort": 3},
+        {"key": "projects", "label": "Projects", "sort": 4},
+    ],
+    "section_map": {
+        "contents": "intro_text",
+        "strategy": "strategy_notes",
+        "finance": "finance_events",
+        "projects": "projects_fundraiser",
+    },
+    "fields": [
+        {
+            "group": "Cover",
+            "fields": [
+                {"name": "org_name", "label": "Organization name", "type": "text", "path": "org_name", "required": True, "placeholder": "e.g. BrightPath Foundation"},
+                {"name": "report_year", "label": "Report year", "type": "text", "path": "report_year", "required": True, "placeholder": "e.g. 2029"},
+                {"name": "tagline", "label": "Tagline", "type": "textarea", "path": "tagline", "required": False, "placeholder": "A short tagline shown under the title"},
+                {"name": "cover_authors", "label": "Contributors (cover)", "type": "textarea", "path": "cover_authors", "required": False, "placeholder": "e.g. KALAN ABHEEDI, ROYCE CHALMER"},
+                {"name": "cover_logo", "label": "Logo image", "type": "image", "path": "cover_logo", "placeholder": "cover_logo", "required": False},
+                {"name": "cover_photo", "label": "Cover photo", "type": "image", "path": "cover_photo", "placeholder": "cover_photo", "required": False},
+            ],
+        },
+        {
+            "group": "Contents & Introduction",
+            "fields": [
+                {"name": "contents_photo", "label": "Contents photo", "type": "image", "path": "contents_photo", "placeholder": "contents_photo", "required": False},
+                {"name": "intro_title", "label": "Introduction title", "type": "text", "path": "intro_title", "required": False, "placeholder": "e.g. The Road We Walked Together"},
+                {"name": "intro_text", "label": "Introduction text", "type": "textarea", "path": "intro_text", "required": False, "placeholder": "A short welcome paragraph…"},
+                {"name": "intro_extra", "label": "Introduction extra", "type": "textarea", "path": "intro_extra", "required": False, "placeholder": "Optional second paragraph…"},
+            ],
+        },
+        {
+            "group": "Strategy",
+            "fields": [
+                {"name": "strategy_photo", "label": "Strategy photo", "type": "image", "path": "strategy_photo", "placeholder": "strategy_photo", "required": False},
+                {"name": "strategy_funds_2029", "label": "Funds raised (this year)", "type": "text", "path": "strategy_funds_2029", "required": False, "placeholder": "e.g. $14,500,200"},
+                {"name": "strategy_funds_2028", "label": "Funds raised (last year)", "type": "text", "path": "strategy_funds_2028", "required": False, "placeholder": "e.g. $13,400,700"},
+                {"name": "strategy_people_2029", "label": "People served (this year)", "type": "text", "path": "strategy_people_2029", "required": False, "placeholder": "e.g. 15,200"},
+                {"name": "strategy_people_2028", "label": "People served (last year)", "type": "text", "path": "strategy_people_2028", "required": False, "placeholder": "e.g. 13,700"},
+                {"name": "strategy_notes", "label": "Strategy narrative", "type": "textarea", "path": "strategy_notes", "required": False, "placeholder": "A short narrative for the strategy section…"},
+                {"name": "outreach_emails", "label": "Emails sent", "type": "text", "path": "outreach_emails", "required": False, "placeholder": "e.g. 23,000"},
+                {"name": "outreach_conversations", "label": "Conversations", "type": "text", "path": "outreach_conversations", "required": False, "placeholder": "e.g. 12,000"},
+                {"name": "outreach_speeches", "label": "Speeches", "type": "text", "path": "outreach_speeches", "required": False, "placeholder": "e.g. 23"},
+                {"name": "volunteer_growth", "label": "Volunteer growth", "type": "text", "path": "volunteer_growth", "required": False, "placeholder": "e.g. 13%"},
+                {"name": "volunteer_hours", "label": "Volunteer hours", "type": "text", "path": "volunteer_hours", "required": False, "placeholder": "e.g. 460,000"},
+                {"name": "volunteer_party", "label": "Year-end note", "type": "text", "path": "volunteer_party", "required": False, "placeholder": "e.g. 1 great year-end party"},
+            ],
+        },
+        {
+            "group": "Finance",
+            "fields": [
+                {"name": "finance_photo", "label": "Finance photo", "type": "image", "path": "finance_photo", "placeholder": "finance_photo", "required": False},
+                {"name": "finance_sources", "label": "Sources-of-funding chart", "type": "image", "path": "finance_sources", "placeholder": "finance_sources", "required": False},
+                {"name": "finance_expenses", "label": "Expenses chart", "type": "image", "path": "finance_expenses", "placeholder": "finance_expenses", "required": False},
+                {"name": "finance_events", "label": "Events remark", "type": "textarea", "path": "finance_events", "required": False, "placeholder": "Planning fundraisers, community gatherings, sporting events…"},
+                {"name": "finance_conferences", "label": "Conferences remark", "type": "textarea", "path": "finance_conferences", "required": False, "placeholder": "Attending conferences as guest or speaker…"},
+                {"name": "finance_digital", "label": "Digital marketing remark", "type": "textarea", "path": "finance_digital", "required": False, "placeholder": "A digital roadmap to build our following…"},
+            ],
+        },
+        {
+            "group": "Projects",
+            "fields": [
+                {"name": "projects_photo", "label": "Projects photo", "type": "image", "path": "projects_photo", "placeholder": "projects_photo", "required": False},
+                {"name": "projects_fundraiser", "label": "Annual fundraiser text", "type": "textarea", "path": "projects_fundraiser", "required": False, "placeholder": "The annual fundraiser is not the only event…"},
+                {"name": "projects_campaign", "label": "#itsnottheflu text", "type": "textarea", "path": "projects_campaign", "required": False, "placeholder": "Inspired by our digital marketing team…"},
+                {"name": "projects_handwash_title", "label": "Hand-wash campaign title", "type": "text", "path": "projects_handwash_title", "required": False, "placeholder": "If you're happy and you know it, wash your hands"},
+                {"name": "projects_handwash_text", "label": "Hand-wash campaign text", "type": "textarea", "path": "projects_handwash_text", "required": False, "placeholder": "Meningitis can be transmitted through sharing germs…"},
+                {"name": "projects_checklist", "label": "Campaign checklist", "type": "textarea", "path": "projects_checklist", "required": False, "placeholder": "• Awareness posters in urban areas.\n• Promotional video…\n• Public washing stations…"},
+                {"name": "projects_photo2", "label": "Campaign photo", "type": "image", "path": "projects_photo2", "placeholder": "projects_photo2", "required": False},
+            ],
+        },
+    ],
+}
+
+
 BUNDLED_TEMPLATES = [
-    ("Annual Report", PUBLICATION_SCHEMA, build_publication_template),
+    ("Annual Report", MAGAZINE_SCHEMA, build_magazine_template),
 ]

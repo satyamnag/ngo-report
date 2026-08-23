@@ -20,6 +20,33 @@ DOCX_MIME = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
 
+# Demo content so the preview shows the design (preview only, never a real report).
+_PREVIEW_CONTEXT = {
+    "report_year": "2029",
+    "tagline": "Because together we are stronger",
+    "cover_authors": "KALAN ABHEEDI, ROYCE CHALMER\nAMANDA SULLY, JANN VAN HUYSEN\nJEANNETTE MOSS, ELENA SONG",
+    "intro_title": "The Road We Walked Together",
+    "intro_text": "Our journey would not have been possible without our valued volunteers, dedicated donors, and the many professionals who helped our cause.",
+    "strategy_funds_2029": "$14,500,200",
+    "strategy_funds_2028": "$13,400,700",
+    "strategy_people_2029": "15,200",
+    "strategy_people_2028": "13,700",
+    "outreach_emails": "23,000",
+    "outreach_conversations": "12,000",
+    "outreach_speeches": "23",
+    "volunteer_growth": "13%",
+    "volunteer_hours": "460,000",
+    "volunteer_party": "1 GREAT YEAR-END PARTY",
+    "finance_events": "planning fundraiser events, community gatherings, sporting events.",
+    "finance_conferences": "Attending conferences as guest or speaker to raise awareness.",
+    "finance_digital": "We create a digital roadmap to building our online following.",
+    "projects_fundraiser": "The annual fundraiser is the most significant event of the year in terms of donor impact.",
+    "projects_campaign": "Inspired by our digital marketing team, this campaign was digital and on-the-ground.",
+    "projects_handwash_title": "If you're happy and you know it, wash your hands",
+    "projects_handwash_text": "Like many other illnesses, meningitis can be transmitted through the sharing of germs.",
+    "projects_checklist": "• Awareness posters in urban areas.\n• Promotional video with 20,000 shares.\n• Public washing stations throughout the city.",
+}
+
 
 def _get_org(db: Session, user: User) -> Organization:
     org = db.query(Organization).filter_by(user_id=user.id).first()
@@ -84,8 +111,13 @@ def template_preview(
     from ..services.generation import build_defaulted_context, docx_to_pdf, render_report
 
     docx_bytes = storage.get(template.file_key).data
-    context = build_defaulted_context(template.schema_json, {})
-    rendered = render_report(docx_bytes, context, lambda _name: None)
+    context = build_defaulted_context(template.schema_json, _PREVIEW_CONTEXT)
+
+    from ..seed import _default_images
+
+    _defaults = {name: __import__("app.storage", fromlist=["ObjectData"]).ObjectData(data=data, content_type=ct) for name, (data, ct) in _default_images().items()}
+
+    rendered = render_report(docx_bytes, context, lambda name: _defaults.get(name))
     pdf = docx_to_pdf(rendered)
 
     import fitz
