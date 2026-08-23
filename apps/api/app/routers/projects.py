@@ -309,6 +309,38 @@ def update_section(
     return section
 
 
+@router.post("/{project_id}/ai-generate", status_code=200)
+def ai_generate(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate a content plan with OpenAI using the bundled agent prompt, then
+    auto-fill the project's details. Factual fields are never overwritten."""
+    org = _get_org(db, current_user)
+    project = _get_project(db, org, project_id)
+    template = db.get(Template, project.template_id)
+
+    from ..services.ai_service import (
+        AiKeyMissingError,
+        generate_content_plan,
+        input_json_to_profile,
+        merge_plan,
+    )
+
+    profile = input_json_to_profile(project.input_json or {})
+    try:
+        plan = generate_content_plan(profile, template.schema_json)
+    except AiKeyMissingError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    merged = merge_plan(project.input_json or {}, plan)
+    project.input_json = merged
+    db.commit()
+    record_audit(db, "project.ai_generate", user_id=current_user.id, project_id=project.id)
+    return {"applied": True, "plan": plan}
+
+
 @router.get("/{project_id}/audit", response_model=list[AuditOut])
 def audit_trail(
     project_id: str,

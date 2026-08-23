@@ -28,6 +28,8 @@ export default function ProjectDetailPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiMessage, setAiMessage] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function refresh() {
@@ -98,6 +100,24 @@ export default function ProjectDetailPage() {
     refresh();
   }
 
+  async function aiGenerate() {
+    setError("");
+    setAiBusy(true);
+    setAiMessage("");
+    try {
+      const res = await api<{ applied: boolean }>(`/api/projects/${pid}/ai-generate`, {
+        method: "POST",
+        body: {},
+      });
+      setAiMessage(res.applied ? "AI content plan applied — review and save below." : "AI generation completed.");
+      await refresh();
+    } catch (err) {
+      setAiMessage(err instanceof Error ? err.message : "AI generation failed");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
   async function showPreview() {
     const res = await api<Response>(`/api/projects/${pid}/report`, { raw: true });
     const html = await res.text();
@@ -127,6 +147,16 @@ export default function ProjectDetailPage() {
           <>
             <div className="card">
               <h2>Report details</h2>
+              <div className="row" style={{ marginBottom: 8 }}>
+                <button className="secondary" onClick={aiGenerate} disabled={aiBusy}>
+                  {aiBusy ? "Generating with AI…" : "Auto-fill with AI"}
+                </button>
+                {aiMessage && (
+                  <span className={aiMessage.includes("failed") || aiMessage.includes("not configured") ? "error" : "muted"}>
+                    {aiMessage}
+                  </span>
+                )}
+              </div>
               <DynamicForm
                 schema={template.schema_json}
                 initial={project.input_json}

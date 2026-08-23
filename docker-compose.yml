@@ -55,6 +55,8 @@ services:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost/api}
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
     depends_on:
       postgres:
         condition: service_healthy

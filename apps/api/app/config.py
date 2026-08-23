@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
+    # --- AI content generation (OpenAI) ---
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o"
+
     # --- Object storage ---
     # "local"  -> filesystem under storage_local_dir (dev, no MinIO needed)
     # "minio"  -> S3-compatible object store
