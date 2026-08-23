@@ -33,6 +33,13 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
 
     org = Organization(user_id=user.id, name=payload.org_name)
     db.add(org)
+    db.flush()
+
+    # Every new organization starts with the bundled sample template.
+    from ..seed import create_sample_template_for_org
+
+    create_sample_template_for_org(db, org)
+
     db.commit()
     db.refresh(user)
     record_audit(db, "auth.register", user_id=user.id)

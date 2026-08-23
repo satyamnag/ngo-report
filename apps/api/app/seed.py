@@ -69,6 +69,56 @@ def _default_images() -> dict[str, tuple[bytes, str]]:
     return images
 
 
+def create_sample_template_for_org(db, org: Organization) -> Template:
+    """Idempotently create the bundled sample template for an organization.
+
+    Every organization (new or existing) gets the bundled template so the app
+    is immediately usable: new signups are assigned it at registration and
+    existing orgs are backfilled lazily when they list templates.
+    """
+    existing = (
+        db.query(Template)
+        .filter_by(org_id=org.id, name="NGO Annual Report")
+        .first()
+    )
+    if existing is not None:
+        return existing
+
+    storage = get_storage()
+    template_id = str(uuid.uuid4())
+    docx_bytes = build_sample_template()
+
+    docx_key = f"templates/{template_id}/template.docx"
+    storage.put(docx_key, docx_bytes, DOCX_MIME)
+
+    manifest: dict[str, str] = {}
+    for name, (data, content_type) in _default_images().items():
+        image_key = f"templates/{template_id}/images/{name}.png"
+        storage.put(image_key, data, content_type)
+        manifest[name] = image_key
+    storage.put(
+        f"templates/{template_id}/manifest.json",
+        json.dumps(manifest).encode("utf-8"),
+        "application/json",
+    )
+
+    template = Template(
+        id=template_id,
+        org_id=org.id,
+        name="NGO Annual Report",
+        description=SAMPLE_SCHEMA["description"],
+        status="active",
+        file_key=docx_key,
+        schema_json=SAMPLE_SCHEMA,
+        version=1,
+    )
+    db.add(template)
+    db.commit()
+    db.refresh(template)
+    print(f"[seed] assigned sample template {template.name} ({template.id}) to org {org.name}")
+    return template
+
+
 def seed() -> None:
     Base.metadata.create_all(engine)
     db = SessionLocal()
@@ -91,41 +141,7 @@ def seed() -> None:
 
         org = db.query(Organization).filter_by(user_id=user.id).first()
 
-        # --- Bundled sample template ---
-        existing = db.query(Template).filter_by(org_id=org.id, name="NGO Annual Report").first()
-        if existing is not None:
-            return
-
-        storage = get_storage()
-        template_id = str(uuid.uuid4())
-        docx_bytes = build_sample_template()
-
-        docx_key = f"templates/{template_id}/template.docx"
-        storage.put(docx_key, docx_bytes, DOCX_MIME)
-
-        manifest: dict[str, str] = {}
-        for name, (data, content_type) in _default_images().items():
-            image_key = f"templates/{template_id}/images/{name}.png"
-            storage.put(image_key, data, content_type)
-            manifest[name] = image_key
-        storage.put(
-            f"templates/{template_id}/manifest.json",
-            json.dumps(manifest).encode("utf-8"),
-            "application/json",
-        )
-
-        template = Template(
-            id=template_id,
-            org_id=org.id,
-            name="NGO Annual Report",
-            description=SAMPLE_SCHEMA["description"],
-            status="active",
-            file_key=docx_key,
-            schema_json=SAMPLE_SCHEMA,
-            version=1,
-        )
-        db.add(template)
-        db.commit()
-        print(f"[seed] created sample template {template.name} ({template.id})")
+        # --- Bundled sample template for the demo organization ---
+        create_sample_template_for_org(db, org)
     finally:
         db.close()
