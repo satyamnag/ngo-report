@@ -9,6 +9,7 @@ from ..celery_app import celery_app
 from ..database import SessionLocal
 from ..models import Generation, Project, ReportAsset, ReportSection, Template, record_audit
 from ..services.generation import (
+    build_defaulted_context,
     docx_to_html,
     docx_to_pdf,
     html_to_plain_text,
@@ -81,9 +82,10 @@ def _run_generation(db, generation: Generation, project: Project, template: Temp
     generation.error = None
     db.commit()
 
+    context = build_defaulted_context(template.schema_json, generation.input_json or {})
     template_bytes = storage.get(template.file_key).data
     provider = _build_image_provider(db, project.id, template.id)
-    docx_bytes = render_report(template_bytes, project.input_json or {}, provider)
+    docx_bytes = render_report(template_bytes, context, provider)
 
     docx_key = f"projects/{project.id}/generations/{generation.id}/report.docx"
     storage.put(docx_key, docx_bytes, DOCX_MIME)
@@ -131,6 +133,7 @@ def generate_report_task(self, project_id: str, generation_id: str) -> dict:
 def rebuild_report_task(self, project_id: str) -> dict:
     """Regenerate the report with TipTap section overrides applied."""
     db = SessionLocal()
+    generation: Generation | None = None
     try:
         project = db.get(Project, project_id)
         if project is None:
@@ -157,11 +160,24 @@ def rebuild_report_task(self, project_id: str) -> dict:
         )
         db.add(generation)
         db.commit()
+        db.refresh(generation)
 
         _run_generation(db, generation, project, template)
+
+        # Persist the merged context (edited sections folded in) so the project
+        # record stays the source of truth for previews and later rebuilds.
+        project.input_json = generation.input_json
+        db.commit()
+
         return {"generation_id": generation.id, "status": generation.status}
     except Exception as exc:
         db.rollback()
+        if generation is not None:
+            generation = db.get(Generation, generation.id)
+            if generation is not None:
+                generation.status = "failed"
+                generation.error = str(exc)
+                db.commit()
         raise
     finally:
         db.close()

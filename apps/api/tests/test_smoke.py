@@ -150,6 +150,17 @@ def test_full_generation_pipeline():
             break
     assert gen["status"] == "completed", gen
 
+    # The section override MUST be folded into the rebuilt DOCX.
+    docx2 = client.get(f"/api/projects/{pid}/download?format=docx", headers=_auth(token))
+    assert docx2.status_code == 200
+    import io
+
+    from docx import Document
+
+    d2 = Document(io.BytesIO(docx2.content))
+    text2 = "\n".join(p.text for p in d2.paragraphs)
+    assert "Edited section text." in text2, "section override not applied to rebuilt docx"
+
 
 def test_template_upload_validation():
     token = _login()

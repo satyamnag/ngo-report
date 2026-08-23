@@ -157,6 +157,44 @@ def render_report(
     return out.getvalue()
 
 
+def _set_nested_path(root: dict, path: str, value) -> None:
+    keys = path.split(".")
+    node = root
+    for key in keys[:-1]:
+        node = node.setdefault(key, {})
+    node[keys[-1]] = value
+
+
+def build_defaulted_context(schema_json: dict, input_json: dict) -> dict:
+    """Return a render context where every schema field path exists.
+
+    Missing paths become an empty string so templates render cleanly even when
+    the user left fields blank (jinja2 raises on truly undefined variables).
+    Provided values are preserved exactly.
+    """
+    ctx = dict(input_json or {})
+
+    def _has(path: str) -> bool:
+        keys = path.split(".")
+        node = ctx
+        for key in keys:
+            if isinstance(node, dict) and key in node:
+                node = node[key]
+            else:
+                return False
+        return True
+
+    for group in (schema_json or {}).get("fields", []):
+        for field in group.get("fields", []):
+            path = field.get("path")
+            if not path or field.get("type") == "image":
+                continue
+            if not _has(path):
+                _set_nested_path(ctx, path, "")
+
+    return ctx
+
+
 def docx_to_pdf(docx_bytes: bytes) -> bytes:
     """Convert DOCX bytes to PDF bytes using LibreOffice headless."""
     with tempfile.TemporaryDirectory() as tmp:
