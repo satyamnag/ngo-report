@@ -27,7 +27,7 @@ export default function Nav() {
 
   return (
     <nav className="nav">
-      <Link href="/projects" className="brand">
+      <Link href="/" className="brand">
         NGO Report Studio
       </Link>
       {AUTH_ENABLED && user && (
