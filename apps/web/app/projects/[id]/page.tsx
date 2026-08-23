@@ -208,7 +208,7 @@ export default function ProjectDetailPage() {
             setDeleting(true);
             try {
               await api(`/api/projects/${pid}`, { method: "DELETE" });
-              router.push("/projects");
+              router.push("/");
             } catch (err) {
               setError(err instanceof Error ? err.message : "Delete failed");
               setConfirmDelete(false);

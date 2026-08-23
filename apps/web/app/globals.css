@@ -222,6 +222,16 @@ label {
   text-align: left;
   box-shadow: 0 6px 24px rgba(11, 110, 107, 0.06);
 }
+.home-reports {
+  margin-top: 36px;
+  text-align: left;
+}
+.home-reports h2 {
+  margin: 0 0 14px;
+}
+.report-row {
+  text-align: left;
+}
 .prompt-box {
   border: 1px solid var(--border);
   border-radius: 12px;

@@ -15,7 +15,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!AUTH_ENABLED) {
-      router.replace("/projects");
+      router.replace("/");
     }
   }, [router]);
 
@@ -36,7 +36,7 @@ export default function LoginPage() {
       }
       const token = await res.json();
       setTokens(token.access_token, token.refresh_token);
-      router.push("/projects");
+      router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

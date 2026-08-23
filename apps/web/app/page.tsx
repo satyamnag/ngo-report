@@ -1,6 +1,7 @@
 "use client";
 
 import Nav from "@/components/Nav";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import TemplatePreview from "@/components/TemplatePreview";
 import { api, type Project, type Template } from "@/lib/api";
 import { useRouter } from "next/navigation";
@@ -17,7 +18,16 @@ export default function HomePage() {
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [toDelete, setToDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  function loadProjects() {
+    api<Project[]>("/api/projects")
+      .then(setProjects)
+      .catch(() => {});
+  }
 
   useEffect(() => {
     api<Template[]>("/api/templates")
@@ -26,7 +36,24 @@ export default function HomePage() {
         if (list[0]) setTemplateId(list[0].id);
       })
       .catch(() => {});
+    loadProjects();
   }, []);
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    setDeleting(true);
+    setError("");
+    try {
+      await api(`/api/projects/${toDelete.id}`, { method: "DELETE" });
+      setProjects((prev) => prev.filter((p) => p.id !== toDelete.id));
+      setToDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+      setToDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function generate() {
     setError("");
@@ -182,6 +209,38 @@ export default function HomePage() {
             your own server, used only to build your report, and never shared.
           </p>
         </div>
+
+        <div className="home-reports">
+          <h2>Your reports</h2>
+          {projects.length === 0 && <p className="muted">No reports yet. Build your first one above.</p>}
+          {projects.map((p) => (
+            <div className="card report-row" key={p.id}>
+              <div className="row">
+                <div>
+                  <strong>{p.title}</strong>
+                  <div className="muted">
+                    updated {new Date(p.updated_at).toLocaleString()}
+                  </div>
+                </div>
+                <span className="spacer" />
+                <span className={`status-pill ${p.status}`}>{p.status}</span>
+                <a href={`/projects/${p.id}`}>Open →</a>
+                <button className="danger" onClick={() => setToDelete(p)}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <ConfirmDialog
+          open={!!toDelete}
+          title="Delete this report?"
+          message={`This permanently deletes "${toDelete?.title ?? "this report"}" and its generated files. This cannot be undone.`}
+          confirmLabel={deleting ? "Deleting…" : "Delete"}
+          onConfirm={confirmDelete}
+          onCancel={() => setToDelete(null)}
+        />
       </div>
     </>
   );
