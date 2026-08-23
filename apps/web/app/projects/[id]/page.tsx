@@ -5,7 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import DynamicForm from "@/components/DynamicForm";
+import DocumentsCard from "@/components/DocumentsCard";
 import Nav from "@/components/Nav";
+import SourcesCard from "@/components/SourcesCard";
 import ThemeCard from "@/components/ThemeCard";
 import {
   api,
@@ -32,6 +34,8 @@ export default function ProjectDetailPage() {
   const [busy, setBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiMessage, setAiMessage] = useState("");
+  const [agentBusy, setAgentBusy] = useState(false);
+  const [agentMessage, setAgentMessage] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function refresh() {
@@ -120,6 +124,28 @@ export default function ProjectDetailPage() {
     }
   }
 
+  async function agentBuild() {
+    setError("");
+    setAgentBusy(true);
+    setAgentMessage("");
+    try {
+      const res = await api<{ applied: boolean }>(`/api/projects/${pid}/research-generate`, {
+        method: "POST",
+        body: {},
+      });
+      setAgentMessage(
+        res.applied
+          ? "The agent researched and drafted the report — review and save below."
+          : "Agent finished."
+      );
+      await refresh();
+    } catch (err) {
+      setAgentMessage(err instanceof Error ? err.message : "Agent run failed");
+    } finally {
+      setAgentBusy(false);
+    }
+  }
+
   async function showPreview() {
     const res = await api<Response>(`/api/projects/${pid}/report`, { raw: true });
     const html = await res.text();
@@ -168,6 +194,30 @@ export default function ProjectDetailPage() {
             </div>
 
             <ThemeCard project={project} onSaved={refresh} />
+            <SourcesCard project={project} />
+            <DocumentsCard project={project} />
+
+            <div className="card">
+              <h2>Build the report with the AI agent</h2>
+              <p className="muted">
+                The agent researches your granted sources and uploaded documents,
+                then drafts the entire report into the form above.
+              </p>
+              <button onClick={agentBuild} disabled={agentBusy}>
+                {agentBusy ? "Agent is researching…" : "Build report with AI agent"}
+              </button>
+              {agentMessage && (
+                <p
+                  className={
+                    agentMessage.includes("failed") || agentMessage.includes("not configured")
+                      ? "error"
+                      : "muted"
+                  }
+                >
+                  {agentMessage}
+                </p>
+              )}
+            </div>
 
             <div className="card">
               <h2>Generate &amp; download</h2>

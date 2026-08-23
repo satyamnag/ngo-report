@@ -159,6 +159,48 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
+class ProjectSource(Base):
+    """A read-only external source the user grants the agent permission to read."""
+
+    __tablename__ = "project_sources"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
+    platform: Mapped[str] = mapped_column(String(32))  # website|facebook|instagram|twitter|linkedin|youtube
+    url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="pending")  # pending|ok|error|skipped
+    fetched_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    project: Mapped["Project"] = relationship(back_populates="sources")
+
+
+class ProjectDocument(Base):
+    """A research document the user uploads for the agent to read."""
+
+    __tablename__ = "project_documents"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
+    name: Mapped[str] = mapped_column(String(255))
+    object_key: Mapped[str] = mapped_column(String(512))
+    original_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    content_type: Mapped[str] = mapped_column(String(128))
+    extracted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    project: Mapped["Project"] = relationship(back_populates="documents")
+
+
+Project.sources = relationship(
+    "ProjectSource", back_populates="project", cascade="all, delete-orphan"
+)
+Project.documents = relationship(
+    "ProjectDocument", back_populates="project", cascade="all, delete-orphan"
+)
+
+
 def record_audit(db, action: str, user_id: str | None = None, project_id: str | None = None) -> None:
     db.add(AuditLog(user_id=user_id, project_id=project_id, action=action))
     db.commit()

@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # --- AI content generation (OpenAI) ---
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
+    youtube_api_key: str = ""
 
     # --- Object storage ---
     # "local"  -> filesystem under storage_local_dir (dev, no MinIO needed)

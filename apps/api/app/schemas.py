@@ -118,3 +118,34 @@ class AuditOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ---------- Research sources & documents ----------
+class SourceUpdate(BaseModel):
+    website: str | None = None
+    facebook: str | None = None
+    instagram: str | None = None
+    twitter: str | None = None
+    linkedin: str | None = None
+    youtube: str | None = None
+
+
+class SourceOut(BaseModel):
+    platform: str
+    url: str | None
+    status: str
+    error: str | None
+    fetched_chars: int | None
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentOut(BaseModel):
+    id: str
+    name: str
+    original_name: str | None
+    content_type: str
+    has_text: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
