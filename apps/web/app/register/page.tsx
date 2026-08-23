@@ -24,14 +24,11 @@ export default function RegisterPage() {
         body: { email, org_name: org, password },
       });
       const body = new URLSearchParams({ username: email, password });
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body,
-        }
-      );
+      const res = await fetch(`/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      });
       const token = await res.json();
       setTokens(token.access_token, token.refresh_token);
       router.push("/projects");

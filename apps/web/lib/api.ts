@@ -1,5 +1,6 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// API is proxied same-origin (/api/* -> FastAPI backend via next.config rewrites),
+// so browsers never hit mixed-content blocks. No absolute backend URL needed.
+export const API_URL = "";
 
 export class ApiError extends Error {
   status: number;

@@ -19,7 +19,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const body = new URLSearchParams({ username: email, password });
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/login`, {
+      const res = await fetch(`/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body,
