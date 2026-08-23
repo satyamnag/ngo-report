@@ -113,7 +113,7 @@ export default function HomePage() {
           <div className="prompt-box">
             <textarea
               id="home-prompt"
-              rows={4}
+              rows={8}
               value={prompt}
               placeholder="Tell the agent what to cover — e.g. our 2026 impact, the three new programmes, and our donor acknowledgment…"
               onChange={(e) => setPrompt(e.target.value)}
