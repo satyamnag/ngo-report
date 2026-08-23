@@ -130,6 +130,10 @@ def save_details(
         project.title = payload.title
     if payload.input_json:
         project.input_json = payload.input_json
+    if payload.theme_color is not None:
+        project.input_json["_theme_color"] = payload.theme_color
+    if payload.theme_background is not None:
+        project.input_json["_theme_background"] = payload.theme_background
     db.commit()
     db.refresh(project)
     record_audit(db, "project.details_saved", user_id=current_user.id, project_id=project.id)

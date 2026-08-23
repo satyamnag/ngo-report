@@ -16,10 +16,25 @@ from ..services.generation import (
     render_report,
 )
 from ..storage import get_storage
+from ..services.theme import apply_background_to_pdf, apply_theme, background_png_bytes
 
 DOCX_MIME = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
+
+def _get_custom_background(db, project_id: str) -> bytes | None:
+    asset = (
+        db.query(ReportAsset)
+        .filter_by(project_id=project_id, name="_background")
+        .first()
+    )
+    if asset is None:
+        return None
+    try:
+        return get_storage().get(asset.object_key).data
+    except Exception:
+        return None
 
 
 def _load_template_manifest(storage, template_id: str) -> dict[str, str]:
@@ -87,6 +102,14 @@ def _run_generation(db, generation: Generation, project: Project, template: Temp
     provider = _build_image_provider(db, project.id, template.id)
     docx_bytes = render_report(template_bytes, context, provider)
 
+    # Apply the user's theme color + page background.
+    theme_input = generation.input_json or {}
+    docx_bytes = apply_theme(
+        docx_bytes,
+        theme_color=theme_input.get("_theme_color"),
+        background_id=theme_input.get("_theme_background"),
+        custom_background=_get_custom_background(db, project.id),
+    )
     docx_key = f"projects/{project.id}/generations/{generation.id}/report.docx"
     storage.put(docx_key, docx_bytes, DOCX_MIME)
     generation.output_docx_key = docx_key
@@ -94,6 +117,14 @@ def _run_generation(db, generation: Generation, project: Project, template: Temp
     db.commit()
 
     pdf_bytes = docx_to_pdf(docx_bytes)
+    # Guaranteed page background for the PDF (LibreOffice ignores DOCX settings
+    # backgrounds, so we overlay it here on every page).
+    if theme_input.get("_theme_background") and theme_input.get("_theme_background") != "none":
+        bg_image = background_png_bytes(theme_input["_theme_background"], 1240, 1754)
+    else:
+        bg_image = _get_custom_background(db, project.id)
+    if bg_image:
+        pdf_bytes = apply_background_to_pdf(pdf_bytes, bg_image)
     pdf_key = f"projects/{project.id}/generations/{generation.id}/report.pdf"
     storage.put(pdf_key, pdf_bytes, "application/pdf")
     generation.output_pdf_key = pdf_key

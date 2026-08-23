@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers import assets, auth, projects, templates
+from .routers import assets, auth, backgrounds, projects, templates
 from .seed import seed
 
 
@@ -36,6 +36,7 @@ app.include_router(auth.router)
 app.include_router(templates.router)
 app.include_router(projects.router)
 app.include_router(assets.router)
+app.include_router(backgrounds.router)
 
 
 @app.get("/api/health")

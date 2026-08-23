@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import DynamicForm from "@/components/DynamicForm";
 import Nav from "@/components/Nav";
+import ThemeCard from "@/components/ThemeCard";
 import {
   api,
   AUTH_ENABLED,
@@ -165,6 +166,8 @@ export default function ProjectDetailPage() {
                 onSave={saveDetails}
               />
             </div>
+
+            <ThemeCard project={project} onSaved={refresh} />
 
             <div className="card">
               <h2>Generate &amp; download</h2>

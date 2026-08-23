@@ -59,6 +59,8 @@ class ProjectCreate(BaseModel):
 class ProjectDetails(BaseModel):
     title: str | None = Field(default=None, max_length=255)
     input_json: dict = Field(default_factory=dict)
+    theme_color: str | None = Field(default=None, max_length=16)
+    theme_background: str | None = Field(default=None, max_length=64)
 
 
 class SectionUpdate(BaseModel):
