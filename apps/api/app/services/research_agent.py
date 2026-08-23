@@ -115,7 +115,24 @@ def run_research_agent(
         indent=2,
     )
 
-    result = Runner.run_sync(agent, user_message, max_turns=14)
-    if not result.final_output or not result.final_output.strip():
-        raise ValueError("Agent returned an empty response")
-    return _extract_json(result.final_output)
+    # Run with one corrective retry if the agent returns invalid JSON.
+    for attempt in range(2):
+        result = Runner.run_sync(agent, user_message, max_turns=14)
+        if not result.final_output or not result.final_output.strip():
+            if attempt == 0:
+                user_message += (
+                    "\n\nYour previous response was empty. Return ONLY a strict "
+                    "JSON object matching the schema exactly, no prose."
+                )
+                continue
+            raise ValueError("Agent returned an empty response")
+        try:
+            return _extract_json(result.final_output)
+        except ValueError:
+            if attempt == 0:
+                user_message += (
+                    "\n\nYour previous output was not valid JSON. Return ONLY a "
+                    "strict JSON object matching the schema exactly, no prose."
+                )
+                continue
+            raise

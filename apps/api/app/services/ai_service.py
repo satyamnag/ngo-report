@@ -152,7 +152,10 @@ def parse_agent_json(text: str) -> dict:
 
 
 def generate_content_plan(org_profile: dict, template_schema: dict) -> dict:
-    """Call OpenAI with the agent prompt + org profile, return the plan JSON."""
+    """Call OpenAI with the agent prompt + org profile, return the plan JSON.
+
+    Retries once with a corrective instruction if the model returns invalid
+    JSON, then falls back to the strict error path."""
     if not settings.openai_api_key:
         raise AiKeyMissingError(
             "OPENAI_API_KEY is not configured on the backend. Add it to the "
@@ -168,19 +171,101 @@ def generate_content_plan(org_profile: dict, template_schema: dict) -> dict:
         indent=2,
     )
 
+    for attempt in range(2):
+        completion = client.chat.completions.create(
+            model=settings.openai_model,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.7,
+        )
+        content = completion.choices[0].message.content
+        if not content:
+            if attempt == 0:
+                user += "\n\nYour previous response was empty. Return ONLY strict JSON."
+                continue
+            raise ValueError("OpenAI returned an empty response")
+        try:
+            return _extract_json(content)
+        except ValueError:
+            if attempt == 0:
+                user += (
+                    "\n\nYour previous output was not valid JSON. Return ONLY a "
+                    "strict JSON object matching the schema exactly, no prose."
+                )
+                continue
+            raise
+
+
+# Narrative fields the reviewer may polish (facts/numbers/names preserved).
+REVIEW_FIELDS = [
+    "foreword",
+    "intro_title",
+    "intro_text",
+    "intro_extra",
+    "strategy_notes",
+    "finance_events",
+    "finance_conferences",
+    "finance_digital",
+    "projects_fundraiser",
+    "projects_campaign",
+    "projects_handwash_text",
+    "projects_checklist",
+]
+
+
+def review_narratives(input_json: dict) -> dict:
+    """Polish the report's narrative fields with an AI reviewer pass.
+
+    Facts, numbers, and names are preserved exactly; only wording, tone,
+    consistency, and readability are improved. Returns {field: improved_text}
+    for changed fields. Safe: any failure returns {} (nothing changes)."""
+    if not settings.openai_api_key:
+        raise AiKeyMissingError(
+            "OPENAI_API_KEY is not configured on the backend. Add it to the "
+            "server .env (OPENAI_API_KEY=...) and restart the API."
+        )
+
+    fields = {k: v for k, v in (input_json or {}).items() if k in REVIEW_FIELDS and v}
+    if not fields:
+        return {}
+
+    from openai import OpenAI
+
+    client = OpenAI(api_key=settings.openai_api_key)
+    prompt = (
+        "You are an experienced annual report editor. Below are narrative "
+        "fields of an NGO annual report. Improve each one: fix grammar, sharpen "
+        "tone, remove duplication, and improve flow and readability. PRESERVE "
+        "every fact, number, percentage, and name exactly as written. Never "
+        "invent, add, or remove information.\n"
+        "Return ONLY a strict JSON object mapping each field name to its "
+        "improved text. Omit any field you would not change.\n\n"
+        + json.dumps(fields, indent=2, ensure_ascii=False)
+    )
+
     completion = client.chat.completions.create(
         model=settings.openai_model,
         messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
+            {"role": "system", "content": "You are a meticulous editor. Return only valid JSON."},
+            {"role": "user", "content": prompt},
         ],
         response_format={"type": "json_object"},
-        temperature=0.7,
+        temperature=0.3,
     )
-    content = completion.choices[0].message.content
-    if not content:
-        raise ValueError("OpenAI returned an empty response")
-    return _extract_json(content)
+    content = completion.choices[0].message.content or "{}"
+    try:
+        parsed = parse_agent_json(content)
+    except ValueError:
+        return {}
+
+    changed = {}
+    for key, value in parsed.items():
+        if key in REVIEW_FIELDS and isinstance(value, str) and value.strip():
+            changed[key] = value.strip()
+    return changed
 
 
 # Narrative fields the AI may rewrite/improve (factual fields are preserved).

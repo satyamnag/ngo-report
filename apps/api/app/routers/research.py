@@ -293,6 +293,15 @@ def research_generate(
     from ..services.ai_service import AiKeyMissingError, input_json_to_profile, merge_plan
     from ..services.research_agent import run_research_agent
 
+    steps = []
+    sources = (
+        db.query(ProjectSource)
+        .filter_by(project_id=project.id, status="ok")
+        .count()
+    )
+    docs = db.query(ProjectDocument).filter_by(project_id=project.id).count()
+    steps.append(f"Gathered {sources} granted source(s) and {docs} document(s)")
+
     profile = input_json_to_profile(project.input_json or {})
     corpus = _build_corpus(db, project)
     user_prompt = (project.input_json or {}).get("_user_prompt")
@@ -305,8 +314,36 @@ def research_generate(
             status_code=502,
             detail="The AI returned an unreadable response. Please try again.",
         ) from exc
+    steps.append("Ran the AI research agent")
 
     project.input_json = merge_plan(project.input_json or {}, plan)
     db.commit()
+    steps.append("Merged the content plan into the report")
     record_audit(db, "project.research_generate", user_id=current_user.id, project_id=project.id)
-    return {"applied": True, "plan": plan}
+    return {"applied": True, "plan": plan, "steps": steps}
+
+
+@router.post("/{project_id}/ai-review")
+def ai_review(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI reviewer quality pass: polish narrative fields (facts preserved)."""
+    org = _get_org(db, current_user)
+    project = _get_project(db, org, project_id)
+
+    from ..services.ai_service import AiKeyMissingError, review_narratives
+
+    try:
+        changed = review_narratives(project.input_json or {})
+    except AiKeyMissingError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    if changed:
+        ij = dict(project.input_json or {})
+        ij.update(changed)
+        project.input_json = ij
+        db.commit()
+    record_audit(db, "project.ai_review", user_id=current_user.id, project_id=project.id)
+    return {"applied": bool(changed), "changed": list(changed.keys())}

@@ -37,6 +37,8 @@ export default function ProjectDetailPage() {
   const [aiMessage, setAiMessage] = useState("");
   const [agentBusy, setAgentBusy] = useState(false);
   const [agentMessage, setAgentMessage] = useState("");
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -124,6 +126,28 @@ export default function ProjectDetailPage() {
       setAiMessage(err instanceof Error ? err.message : "AI generation failed");
     } finally {
       setAiBusy(false);
+    }
+  }
+
+  async function aiReview() {
+    setError("");
+    setReviewBusy(true);
+    setReviewMessage("");
+    try {
+      const res = await api<{ applied: boolean; changed: string[] }>(
+        `/api/projects/${pid}/ai-review`,
+        { method: "POST", body: {} }
+      );
+      setReviewMessage(
+        res.changed.length
+          ? `Review applied — ${res.changed.length} field(s) polished.`
+          : "Nothing to review yet (add narrative content first)."
+      );
+      await refresh();
+    } catch (err) {
+      setReviewMessage(err instanceof Error ? err.message : "Review failed");
+    } finally {
+      setReviewBusy(false);
     }
   }
 
@@ -237,9 +261,14 @@ export default function ProjectDetailPage() {
                 never invents facts, never copies third-party content, and
                 leaves anything uncertain as a placeholder for you to fill.
               </div>
-              <button onClick={agentBuild} disabled={agentBusy}>
-                {agentBusy ? "Agent is researching…" : "Build report with AI agent"}
-              </button>
+              <div className="row">
+                <button onClick={agentBuild} disabled={agentBusy}>
+                  {agentBusy ? "Agent is researching…" : "Build report with AI agent"}
+                </button>
+                <button className="secondary" onClick={aiReview} disabled={reviewBusy}>
+                  {reviewBusy ? "Reviewing…" : "Review with AI"}
+                </button>
+              </div>
               {agentMessage && (
                 <p
                   className={
@@ -249,6 +278,17 @@ export default function ProjectDetailPage() {
                   }
                 >
                   {agentMessage}
+                </p>
+              )}
+              {reviewMessage && (
+                <p
+                  className={
+                    reviewMessage.includes("failed") || reviewMessage.includes("not configured")
+                      ? "error"
+                      : "muted"
+                  }
+                >
+                  {reviewMessage}
                 </p>
               )}
             </div>
