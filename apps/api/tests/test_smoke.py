@@ -127,12 +127,16 @@ def test_full_generation_pipeline():
 
     sections = client.get(f"/api/projects/{pid}/sections", headers=_auth(token))
     assert sections.status_code == 200
-    assert len(sections.json()) == 6
+    schema = client.get(
+        f"/api/templates/{template['id']}/schema", headers=_auth(token)
+    ).json()["schema_json"]
+    assert len(sections.json()) == len(schema["sections"])
+    first_section = sections.json()[0]["section_key"]
 
     assert client.put(
-        f"/api/projects/{pid}/sections/mission",
+        f"/api/projects/{pid}/sections/{first_section}",
         headers=_auth(token),
-        json={"content_html": "<p>Edited mission text.</p>"},
+        json={"content_html": "<p>Edited section text.</p>"},
     ).status_code == 200
 
     resp = client.post(f"/api/projects/{pid}/rebuild", headers=_auth(token), json={})

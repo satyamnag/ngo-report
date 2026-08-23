@@ -10,7 +10,7 @@ import uuid
 from .database import Base, SessionLocal, engine
 from .models import Organization, Template, User
 from .storage import get_storage
-from .template_builder import SAMPLE_SCHEMA, build_sample_template
+from .template_builder import BUNDLED_TEMPLATES
 
 DEMO_EMAIL = "demo@brightpath.org"
 DEMO_PASSWORD = "demo-password-123"
@@ -52,7 +52,6 @@ def _default_images() -> dict[str, tuple[bytes, str]]:
     values = [120, 180, 240, 310, 420]
     bar_w = 130
     base_y = 500
-    scale = 1.0
     max_v = max(values)
     x = 120
     for label, value in zip(labels, values):
@@ -66,57 +65,93 @@ def _default_images() -> dict[str, tuple[bytes, str]]:
     chart.save(buf, format="PNG")
     images["chart_funding"] = (buf.getvalue(), "image/png")
 
+    # Impact chart placeholder (yearly beneficiaries bar chart)
+    chart2 = Image.new("RGB", (1200, 600), (0xFF, 0xFF, 0xFF))
+    draw = ImageDraw.Draw(chart2)
+    labels2 = ["2019", "2020", "2021", "2022", "2023"]
+    values2 = [8000, 10500, 12800, 15000, 17800]
+    bar_w = 130
+    base_y = 500
+    max_v = max(values2)
+    x = 120
+    for label, value in zip(labels2, values2):
+        h = int(value * 420 / max_v)
+        draw.rectangle([x, base_y - h, x + bar_w, base_y], fill=(0x0F, 0x83, 0x80))
+        draw.text((x + bar_w / 2, base_y - h - 24), f"{value // 1000}K", fill=(0x22, 0x33, 0x33), anchor="mm", font=_font(24))
+        draw.text((x + bar_w / 2, base_y + 24), label, fill=(0x6B, 0x72, 0x80), anchor="mm", font=_font(26))
+        x += bar_w + 80
+    draw.text((600, 40), "People served per year", fill=(0x22, 0x33, 0x33), anchor="mm", font=_font(40))
+    buf = io.BytesIO()
+    chart2.save(buf, format="PNG")
+    images["chart_impact"] = (buf.getvalue(), "image/png")
+
+    # Programme photo placeholders (photo-sized cards with a label)
+    palette = [
+        ("Community", 0x2E, 0x86, 0xAB),
+        ("Education", 0xE0, 0x6C, 0x75),
+        ("Nutrition", 0x86, 0xAF, 0x49),
+        ("Youth", 0xF2, 0xA9, 0x1E),
+    ]
+    for index, (label, r, g, b) in enumerate(palette, start=1):
+        photo = Image.new("RGB", (1400, 800), (r, g, b))
+        draw = ImageDraw.Draw(photo)
+        draw.rounded_rectangle([60, 60, 1340, 740], radius=28, fill=(r, g, b))
+        draw.text((700, 400), f"PROGRAMME {index}\n{label.upper()}", fill=(255, 255, 255), anchor="mm", font=_font(72))
+        buf = io.BytesIO()
+        photo.save(buf, format="PNG")
+        images[f"program_{index}"] = (buf.getvalue(), "image/png")
+
     return images
 
 
-def create_sample_template_for_org(db, org: Organization) -> Template:
-    """Idempotently create the bundled sample template for an organization.
+def ensure_bundled_templates_for_org(db, org: Organization) -> list[Template]:
+    """Idempotently create every bundled template an organization is missing.
 
-    Every organization (new or existing) gets the bundled template so the app
-    is immediately usable: new signups are assigned it at registration and
-    existing orgs are backfilled lazily when they list templates.
+    Each org gets all bundled templates (new signups at registration, existing
+    orgs backfilled lazily on first template list). Safe to run repeatedly.
     """
-    existing = (
-        db.query(Template)
-        .filter_by(org_id=org.id, name="NGO Annual Report")
-        .first()
-    )
-    if existing is not None:
-        return existing
-
+    created: list[Template] = []
     storage = get_storage()
-    template_id = str(uuid.uuid4())
-    docx_bytes = build_sample_template()
+    defaults = _default_images()
 
-    docx_key = f"templates/{template_id}/template.docx"
-    storage.put(docx_key, docx_bytes, DOCX_MIME)
+    for name, schema, builder in BUNDLED_TEMPLATES:
+        existing = db.query(Template).filter_by(org_id=org.id, name=name).first()
+        if existing is not None:
+            continue
 
-    manifest: dict[str, str] = {}
-    for name, (data, content_type) in _default_images().items():
-        image_key = f"templates/{template_id}/images/{name}.png"
-        storage.put(image_key, data, content_type)
-        manifest[name] = image_key
-    storage.put(
-        f"templates/{template_id}/manifest.json",
-        json.dumps(manifest).encode("utf-8"),
-        "application/json",
-    )
+        template_id = str(uuid.uuid4())
+        docx_bytes = builder()
+        docx_key = f"templates/{template_id}/template.docx"
+        storage.put(docx_key, docx_bytes, DOCX_MIME)
 
-    template = Template(
-        id=template_id,
-        org_id=org.id,
-        name="NGO Annual Report",
-        description=SAMPLE_SCHEMA["description"],
-        status="active",
-        file_key=docx_key,
-        schema_json=SAMPLE_SCHEMA,
-        version=1,
-    )
-    db.add(template)
-    db.commit()
-    db.refresh(template)
-    print(f"[seed] assigned sample template {template.name} ({template.id}) to org {org.name}")
-    return template
+        manifest: dict[str, str] = {}
+        for image_name, (data, content_type) in defaults.items():
+            image_key = f"templates/{template_id}/images/{image_name}.png"
+            storage.put(image_key, data, content_type)
+            manifest[image_name] = image_key
+        storage.put(
+            f"templates/{template_id}/manifest.json",
+            json.dumps(manifest).encode("utf-8"),
+            "application/json",
+        )
+
+        template = Template(
+            id=template_id,
+            org_id=org.id,
+            name=name,
+            description=schema["description"],
+            status="active",
+            file_key=docx_key,
+            schema_json=schema,
+            version=1,
+        )
+        db.add(template)
+        db.commit()
+        db.refresh(template)
+        created.append(template)
+        print(f"[seed] assigned bundled template {name} ({template_id}) to org {org.name}")
+
+    return created
 
 
 def seed() -> None:
@@ -141,7 +176,7 @@ def seed() -> None:
 
         org = db.query(Organization).filter_by(user_id=user.id).first()
 
-        # --- Bundled sample template for the demo organization ---
-        create_sample_template_for_org(db, org)
+        # --- Bundled templates for the demo organization ---
+        ensure_bundled_templates_for_org(db, org)
     finally:
         db.close()

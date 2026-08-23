@@ -33,25 +33,19 @@ def list_templates(
     current_user: User = Depends(get_current_user),
 ):
     org = _get_org(db, current_user)
-    templates = (
+
+    # Idempotently assign any bundled templates the org is missing (safe to run
+    # on every list; new signups get them at registration).
+    from ..seed import ensure_bundled_templates_for_org
+
+    ensure_bundled_templates_for_org(db, org)
+
+    return (
         db.query(Template)
         .filter(Template.org_id == org.id)
         .order_by(Template.created_at.desc())
         .all()
     )
-    if not templates:
-        # Lazy backfill: assign the bundled sample template to orgs that have
-        # none (e.g. accounts created before auto-assignment existed).
-        from ..seed import create_sample_template_for_org
-
-        create_sample_template_for_org(db, org)
-        templates = (
-            db.query(Template)
-            .filter(Template.org_id == org.id)
-            .order_by(Template.created_at.desc())
-            .all()
-        )
-    return templates
 
 
 @router.get("/{template_id}/schema", response_model=TemplateSchemaOut)

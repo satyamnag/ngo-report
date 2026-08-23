@@ -145,6 +145,7 @@ export default function DynamicForm({
             const common = {
               id: field.name,
               value: values[field.name] ?? "",
+              placeholder: field.placeholder,
               onChange: (e: { target: { value: string } }) =>
                 setValues((prev) => ({ ...prev, [field.name]: e.target.value })),
             };

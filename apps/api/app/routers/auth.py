@@ -35,10 +35,10 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     db.add(org)
     db.flush()
 
-    # Every new organization starts with the bundled sample template.
-    from ..seed import create_sample_template_for_org
+    # Every new organization starts with the bundled templates.
+    from ..seed import ensure_bundled_templates_for_org
 
-    create_sample_template_for_org(db, org)
+    ensure_bundled_templates_for_org(db, org)
 
     db.commit()
     db.refresh(user)
