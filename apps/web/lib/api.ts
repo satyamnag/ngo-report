@@ -2,6 +2,9 @@
 // so browsers never hit mixed-content blocks. No absolute backend URL needed.
 export const API_URL = "";
 
+// Auth is disabled until Clerk is integrated: pages no longer require login.
+export const AUTH_ENABLED = process.env.NEXT_PUBLIC_AUTH_ENABLED === "true";
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {

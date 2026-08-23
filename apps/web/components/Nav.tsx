@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { api, clearTokens, getToken, type User } from "@/lib/api";
+import { AUTH_ENABLED, api, clearTokens, getToken, type User } from "@/lib/api";
 
 export default function Nav() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    if (!AUTH_ENABLED) return;
     if (!getToken()) return;
     api<User>("/api/auth/me")
       .then(setUser)
@@ -29,7 +30,7 @@ export default function Nav() {
       <Link href="/projects" className="brand">
         NGO Report Studio
       </Link>
-      {user && (
+      {AUTH_ENABLED && user && (
         <>
           <span className="muted">
             {user.org_name} · {user.email}

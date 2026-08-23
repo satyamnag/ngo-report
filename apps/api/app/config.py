@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
+    # When False, authentication is disabled: every request acts as the demo
+    # user/org. Used until Clerk auth is integrated.
+    auth_enabled: bool = True
+
     # --- AI content generation (OpenAI) ---
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"

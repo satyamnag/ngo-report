@@ -8,6 +8,7 @@ import DynamicForm from "@/components/DynamicForm";
 import Nav from "@/components/Nav";
 import {
   api,
+  AUTH_ENABLED,
   downloadFile,
   getToken,
   type Generation,
@@ -46,7 +47,7 @@ export default function ProjectDetailPage() {
   }
 
   useEffect(() => {
-    if (!getToken()) {
+    if (AUTH_ENABLED && !getToken()) {
       router.replace("/login");
       return;
     }

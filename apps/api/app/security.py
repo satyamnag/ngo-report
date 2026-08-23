@@ -21,7 +21,9 @@ password_hash = PasswordHash.recommended()
 # Verify timing-safe against a dummy hash so unknown users don't leak timing info.
 DUMMY_HASH = password_hash.hash("dummy-password-for-timing-safety")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+# auto_error=False so the dependency can run even without a token when
+# authentication is disabled.
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
 def hash_password(plain: str) -> str:
@@ -68,8 +70,34 @@ def decode_token(token: str) -> dict:
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+    token: str | None = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> User:
+    # Auth disabled: every request acts as the seeded demo user (until Clerk).
+    if not settings.auth_enabled:
+        from .models import Organization
+        from .seed import DEMO_EMAIL, DEMO_ORG, DEMO_PASSWORD
+
+        user = db.query(User).filter_by(email=DEMO_EMAIL).first()
+        if user is not None:
+            return user
+        user = User(
+            email=DEMO_EMAIL,
+            org_name=DEMO_ORG,
+            password_hash=hash_password(DEMO_PASSWORD),
+        )
+        db.add(user)
+        db.flush()
+        db.add(Organization(user_id=user.id, name=DEMO_ORG))
+        db.commit()
+        return user
+
+    if token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     payload = decode_token(token)
     if payload.get("type") != "access":
         raise HTTPException(

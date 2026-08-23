@@ -1,7 +1,7 @@
 "use client";
 
 import Nav from "@/components/Nav";
-import { api, getToken, type Project, type Template } from "@/lib/api";
+import { api, AUTH_ENABLED, getToken, type Project, type Template } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -14,7 +14,7 @@ export default function ProjectsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!getToken()) {
+    if (AUTH_ENABLED && !getToken()) {
       router.replace("/login");
       return;
     }

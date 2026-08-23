@@ -52,6 +52,7 @@ services:
       MINIO_SECURE: "false"
       MINIO_BUCKET: ngo-report
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      AUTH_ENABLED: ${AUTH_ENABLED:-true}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost/api}
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}

@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { api, setTokens } from "@/lib/api";
+import { AUTH_ENABLED, api, setTokens } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +12,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!AUTH_ENABLED) {
+      router.replace("/projects");
+    }
+  }, [router]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

@@ -8,6 +8,7 @@ import Nav from "@/components/Nav";
 import TipTapEditor from "@/components/TipTapEditor";
 import {
   api,
+  AUTH_ENABLED,
   getToken,
   type Generation,
   type Project,
@@ -31,7 +32,7 @@ export default function EditPage() {
   const [rebuilding, setRebuilding] = useState(false);
 
   useEffect(() => {
-    if (!getToken()) {
+    if (AUTH_ENABLED && !getToken()) {
       router.replace("/login");
       return;
     }
