@@ -42,7 +42,7 @@ def list_templates(
 
     return (
         db.query(Template)
-        .filter(Template.org_id == org.id)
+        .filter(Template.org_id == org.id, Template.status == "active")
         .order_by(Template.created_at.desc())
         .all()
     )

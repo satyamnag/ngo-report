@@ -653,6 +653,5 @@ PUBLICATION_SCHEMA = {
 
 
 BUNDLED_TEMPLATES = [
-    ("NGO Annual Report", SAMPLE_SCHEMA, build_sample_template),
     ("Annual Report — Publication Style", PUBLICATION_SCHEMA, build_publication_template),
 ]
