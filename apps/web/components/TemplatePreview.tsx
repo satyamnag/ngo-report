@@ -2,17 +2,13 @@
 
 import { useState } from "react";
 
-const HOVER_ZOOM = 1.5;
-
 export default function TemplatePreview({ templateId }: { templateId: string }) {
   const [open, setOpen] = useState(false);
   const [scale, setScale] = useState(1);
-  const [hovering, setHovering] = useState(false);
   const [error, setError] = useState("");
 
   const MIN = 0.5;
   const MAX = 3;
-  const effective = Math.min(scale * (hovering ? HOVER_ZOOM : 1), MAX);
 
   function reset() {
     setScale(1);
@@ -71,23 +67,11 @@ export default function TemplatePreview({ templateId }: { templateId: string }) 
                 <img
                   src={`/api/templates/${templateId}/preview`}
                   alt="Template preview"
-                  title="Hover to zoom"
-                  style={{
-                    width: `${effective * 100}%`,
-                    height: "auto",
-                    maxWidth: "none",
-                    transition: "width 0.25s ease",
-                    transformOrigin: "top left",
-                  }}
-                  onMouseEnter={() => setHovering(true)}
-                  onMouseLeave={() => setHovering(false)}
+                  style={{ transform: `scale(${scale})` }}
                   onError={() => setError("Preview is not available yet.")}
                 />
               )}
             </div>
-            <p className="muted" style={{ margin: "8px 0 0" }}>
-              Hover over the preview to zoom. Scroll to move around.
-            </p>
           </div>
         </div>
       )}
