@@ -327,12 +327,4 @@ pre.json {
   line-height: 1.5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #10181a;
-    --card: #162124;
-    --border: #2b3a3e;
-    --ink: #dce7e6;
-    --grey: #93a5a3;
-  }
-}
+/* The app is always light mode (no dark-mode auto-switching). */
