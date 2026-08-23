@@ -114,7 +114,7 @@ select {
   font-size: 14px;
   font-family: inherit;
   background: #fff;
-  color: var(--ink);
+  color: #000;
 }
 label {
   display: block;
@@ -284,6 +284,33 @@ pre.json {
   font-size: 12px;
   text-align: center;
   color: var(--ink);
+}
+
+/* Confirmation dialog */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 22px 24px;
+  max-width: 420px;
+  width: calc(100% - 48px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+.modal h3 {
+  margin: 0 0 8px;
+}
+.modal p {
+  margin: 0 0 18px;
+  color: var(--grey);
+  line-height: 1.5;
 }
 
 @media (prefers-color-scheme: dark) {

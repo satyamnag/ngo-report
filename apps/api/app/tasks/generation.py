@@ -90,7 +90,10 @@ def _set_nested(context: dict, path: str, value):
     node[keys[-1]] = value
 
 
-def _run_generation(db, generation: Generation, project: Project, template: Template) -> None:
+def _run_generation(
+    db, generation: Generation, project: Project, template: Template,
+    rich_overrides: list[tuple[str, str]] | None = None,
+) -> None:
     storage = get_storage()
 
     generation.status = "running"
@@ -101,6 +104,12 @@ def _run_generation(db, generation: Generation, project: Project, template: Temp
     template_bytes = storage.get(template.file_key).data
     provider = _build_image_provider(db, project.id, template.id)
     docx_bytes = render_report(template_bytes, context, provider)
+
+    # Fold Word-like rich section edits into the DOCX (falls back to plain text).
+    if rich_overrides:
+        from ..services.rich_sections import apply_rich_sections
+
+        docx_bytes = apply_rich_sections(docx_bytes, rich_overrides)
 
     # Apply the user's theme color + page background.
     theme_input = generation.input_json or {}
@@ -178,10 +187,13 @@ def rebuild_report_task(self, project_id: str) -> dict:
             .order_by(ReportSection.sort_order)
             .all()
         )
+        rich_overrides: list[tuple[str, str]] = []
         for section in sections:
             path = _section_path(template.schema_json, section.section_key)
             if path and section.content_html:
-                _set_nested(context, path, html_to_plain_text(section.content_html))
+                plain = html_to_plain_text(section.content_html)
+                _set_nested(context, path, plain)
+                rich_overrides.append((plain, section.content_html))
 
         generation = Generation(
             project_id=project.id,
@@ -193,7 +205,7 @@ def rebuild_report_task(self, project_id: str) -> dict:
         db.commit()
         db.refresh(generation)
 
-        _run_generation(db, generation, project, template)
+        _run_generation(db, generation, project, template, rich_overrides=rich_overrides)
 
         # Persist the merged context (edited sections folded in) so the project
         # record stays the source of truth for previews and later rebuilds.

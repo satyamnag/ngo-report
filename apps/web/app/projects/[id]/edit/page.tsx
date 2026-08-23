@@ -64,6 +64,28 @@ export default function EditPage() {
     }
   }
 
+  async function saveAll() {
+    setMessage("");
+    try {
+      for (const section of sections) {
+        if (drafts[section.section_key] !== undefined) {
+          await api(`/api/projects/${pid}/sections/${section.section_key}`, {
+            method: "PUT",
+            body: { content_html: drafts[section.section_key] ?? "" },
+          });
+        }
+      }
+      setSaved((prev) => {
+        const next = { ...prev };
+        for (const s of sections) if (drafts[s.section_key] !== undefined) next[s.section_key] = true;
+        return next;
+      });
+      setMessage("All edits saved.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Save failed");
+    }
+  }
+
   async function rebuild() {
     setRebuilding(true);
     setMessage("Rebuilding report from edited sections…");
@@ -97,6 +119,11 @@ export default function EditPage() {
           <span className="spacer" />
         </div>
         <h1>Edit report — {project?.title ?? "…"}</h1>
+
+        <div className="row" style={{ marginBottom: 12 }}>
+          <button onClick={saveAll}>Save all edits</button>
+          <span className="muted">Then rebuild to apply your formatting to the report.</span>
+        </div>
 
         {message && <p className="muted">{message}</p>}
 

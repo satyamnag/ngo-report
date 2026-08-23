@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import DynamicForm from "@/components/DynamicForm";
 import DocumentsCard from "@/components/DocumentsCard";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import Nav from "@/components/Nav";
 import SourcesCard from "@/components/SourcesCard";
 import ThemeCard from "@/components/ThemeCard";
@@ -36,6 +37,8 @@ export default function ProjectDetailPage() {
   const [aiMessage, setAiMessage] = useState("");
   const [agentBusy, setAgentBusy] = useState(false);
   const [agentMessage, setAgentMessage] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function refresh() {
@@ -164,8 +167,32 @@ export default function ProjectDetailPage() {
         <div className="row">
           <Link href="/projects">← Projects</Link>
           <span className="spacer" />
-          <Link href={`/projects/${pid}/edit`}>Edit sections (TipTap) →</Link>
+          <button className="secondary" onClick={() => router.push(`/projects/${pid}/edit`)}>
+            Edit report
+          </button>
+          <button className="danger" onClick={() => setConfirmDelete(true)}>
+            Delete report
+          </button>
         </div>
+
+        <ConfirmDialog
+          open={confirmDelete}
+          title="Delete this report?"
+          message={`This permanently deletes "${project?.title ?? "this report"}" and its generated files. This cannot be undone.`}
+          confirmLabel={deleting ? "Deleting…" : "Delete"}
+          onConfirm={async () => {
+            setDeleting(true);
+            try {
+              await api(`/api/projects/${pid}`, { method: "DELETE" });
+              router.push("/projects");
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Delete failed");
+              setConfirmDelete(false);
+              setDeleting(false);
+            }
+          }}
+          onCancel={() => setConfirmDelete(false)}
+        />
 
         <h1>{project?.title ?? "Loading…"}</h1>
 

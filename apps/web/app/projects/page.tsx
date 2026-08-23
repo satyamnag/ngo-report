@@ -1,6 +1,7 @@
 "use client";
 
 import Nav from "@/components/Nav";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { api, AUTH_ENABLED, getToken, type Project, type Template } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,6 +13,8 @@ export default function ProjectsPage() {
   const [templateId, setTemplateId] = useState("");
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
+  const [toDelete, setToDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (AUTH_ENABLED && !getToken()) {
@@ -37,6 +40,22 @@ export default function ProjectsPage() {
       router.push(`/projects/${project.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create failed");
+    }
+  }
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    setDeleting(true);
+    setError("");
+    try {
+      await api(`/api/projects/${toDelete.id}`, { method: "DELETE" });
+      setProjects((prev) => prev.filter((p) => p.id !== toDelete.id));
+      setToDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+      setToDelete(null);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -90,9 +109,21 @@ export default function ProjectsPage() {
               <span className="spacer" />
               <span className={`status-pill ${p.status}`}>{p.status}</span>
               <a href={`/projects/${p.id}`}>Open →</a>
+              <button className="danger" onClick={() => setToDelete(p)}>
+                Delete
+              </button>
             </div>
           </div>
         ))}
+
+        <ConfirmDialog
+          open={!!toDelete}
+          title="Delete this report?"
+          message={`This permanently deletes "${toDelete?.title ?? "this report"}" and its generated files. This cannot be undone.`}
+          confirmLabel={deleting ? "Deleting…" : "Delete"}
+          onConfirm={confirmDelete}
+          onCancel={() => setToDelete(null)}
+        />
       </div>
     </>
   );

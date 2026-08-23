@@ -345,6 +345,36 @@ def ai_generate(
     return {"applied": True, "plan": plan}
 
 
+@router.delete("/{project_id}", status_code=204)
+def delete_project(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    org = _get_org(db, current_user)
+    project = _get_project(db, org, project_id)
+
+    # Best-effort removal of stored artifacts (never fails the delete).
+    storage = get_storage()
+    keys: list[str] = []
+    for generation in project.generations:
+        if generation.output_docx_key:
+            keys.append(generation.output_docx_key)
+        if generation.output_pdf_key:
+            keys.append(generation.output_pdf_key)
+    keys.extend(asset.object_key for asset in project.assets)
+    keys.extend(doc.object_key for doc in project.documents)
+    for key in keys:
+        try:
+            storage.delete(key)
+        except Exception:
+            continue
+
+    record_audit(db, "project.delete", user_id=current_user.id, project_id=project.id)
+    db.delete(project)
+    db.commit()
+
+
 @router.get("/{project_id}/audit", response_model=list[AuditOut])
 def audit_trail(
     project_id: str,
