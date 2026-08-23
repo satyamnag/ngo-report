@@ -104,10 +104,12 @@ def _default_images() -> dict[str, tuple[bytes, str]]:
     # Magazine template: black-and-white photo placeholders + charts.
     grey_palette = [("COVER", 150), ("CONTENTS", 140), ("STRATEGY", 160), ("FINANCE", 145), ("PROJECTS", 155), ("CAMPAIGN", 135)]
     for label, gv in grey_palette:
-        photo = Image.new("RGB", (1400, 1800), (gv, gv, gv))
+        # Cover photo is a tall portrait so it fills the left column.
+        photo_h = 5000 if label == "COVER" else 1800
+        photo = Image.new("RGB", (1400, photo_h), (gv, gv, gv))
         draw = ImageDraw.Draw(photo)
-        draw.rectangle([0, 0, 1400, 1800], fill=(gv, gv, gv))
-        draw.text((700, 900), f"{label} PHOTO\n(black & white)", fill=(235, 235, 235), anchor="mm", font=_font(72))
+        draw.rectangle([0, 0, 1400, photo_h], fill=(gv, gv, gv))
+        draw.text((700, photo_h // 2), f"{label} PHOTO\n(black & white)", fill=(235, 235, 235), anchor="mm", font=_font(72))
         buf = io.BytesIO()
         photo.save(buf, format="PNG")
         key = {"COVER": "cover_photo", "CONTENTS": "contents_photo", "STRATEGY": "strategy_photo",

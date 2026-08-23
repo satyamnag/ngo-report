@@ -658,8 +658,8 @@ PUBLICATION_SCHEMA = {
 from docx.oxml import OxmlElement  # noqa: E402
 from docx.oxml.ns import qn  # noqa: E402
 
-BLUE = RGBColor(0x14, 0x50, 0x8C)
-BLUE_HEX = "14508C"
+BLUE = RGBColor(0x44, 0x84, 0xCE)
+BLUE_HEX = "4484CE"
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 
 
@@ -752,20 +752,43 @@ def build_magazine_template() -> bytes:
     section.top_margin = Inches(0.55)
     section.bottom_margin = Inches(0.55)
 
+    # Footer with a page number (right aligned, small grey).
+    footer_p = section.footer.paragraphs[0]
+    footer_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    f_run = footer_p.add_run()
+    fld1 = OxmlElement("w:fldChar")
+    fld1.set(qn("w:fldCharType"), "begin")
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = "PAGE"
+    fld2 = OxmlElement("w:fldChar")
+    fld2.set(qn("w:fldCharType"), "end")
+    f_run._r.append(fld1)
+    f_run._r.append(instr)
+    f_run._r.append(fld2)
+    f_run.font.size = Pt(9)
+    f_run.font.color.rgb = GREY
+
     # ---- Page 1: Cover ----
-    logo_p = doc.add_paragraph()
-    logo_p.add_run("[img:cover_logo]")
     cover = _fixed_table(doc, [2.7, 6.4])
     left, right = cover.rows[0].cells
     _shade_cell(right, BLUE_HEX)
     _photo_cell(left, "[img:cover_photo]")
-    title_p = right.paragraphs[0]
+    logo_p = right.paragraphs[0]
+    logo_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    logo_p.add_run("[img:cover_logo]")
+    for _ in range(3):
+        right.add_paragraph()
+    year_p = right.add_paragraph()
+    year_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _white_run(year_p, "{{ report_year }}", size=40, bold=True)
+    title_p = right.add_paragraph()
     title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _white_run(title_p, "{{ report_year }} ANNUAL REPORT", size=30, bold=True)
+    _white_run(title_p, "ANNUAL REPORT", size=30, bold=True)
     tag = right.add_paragraph()
     tag.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _white_run(tag, "{{ tagline }}", size=14)
-    for _ in range(7):
+    _white_run(tag, "{{ tagline }}", size=13)
+    for _ in range(6):
         right.add_paragraph()
     authors = right.add_paragraph()
     authors.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -783,6 +806,15 @@ def build_magazine_template() -> bytes:
     run.bold = True
     run.font.size = Pt(16)
     run.font.color.rgb = BLUE
+    pPr = h._p.get_or_add_pPr()
+    pBdr = OxmlElement("w:pBdr")
+    bottom = OxmlElement("w:bottom")
+    bottom.set(qn("w:val"), "single")
+    bottom.set(qn("w:sz"), "12")
+    bottom.set(qn("w:space"), "4")
+    bottom.set(qn("w:color"), BLUE_HEX)
+    pBdr.append(bottom)
+    pPr.append(pBdr)
     _toc_item(right, "1 STRATEGY", "KALAN ABHEEDI, ROYCE CHALMER")
     _toc_item(right, "2 FINANCE", "AMANDA SULLY, JANN VAN HUYSEN")
     _toc_item(right, "3 PROJECTS", "JEANNETTE MOSS, ELENA SONG")
@@ -807,6 +839,10 @@ def build_magazine_template() -> bytes:
     src = right.add_paragraph()
     run = src.add_run("from {{ strategy_funds_2028 }}")
     run.font.color.rgb = GREY
+    note = right.add_paragraph()
+    run = note.add_run("(funds raised annually in {{ report_year }} vs. last year)")
+    run.font.color.rgb = GREY
+    run.font.size = Pt(9)
     stat = right.add_paragraph()
     run = stat.add_run("{{ strategy_people_2029 }}")
     run.bold = True
@@ -815,6 +851,10 @@ def build_magazine_template() -> bytes:
     src = right.add_paragraph()
     run = src.add_run("from {{ strategy_people_2028 }}")
     run.font.color.rgb = GREY
+    note = right.add_paragraph()
+    run = note.add_run("(people served annually {{ report_year }} vs. last year)")
+    run.font.color.rgb = GREY
+    run.font.size = Pt(9)
     band = _fixed_table(doc, [9.1])
     cell = band.rows[0].cells[0]
     _shade_cell(cell, BLUE_HEX)

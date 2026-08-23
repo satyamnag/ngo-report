@@ -44,7 +44,7 @@ _PREVIEW_CONTEXT = {
     "projects_campaign": "Inspired by our digital marketing team, this campaign was digital and on-the-ground.",
     "projects_handwash_title": "If you're happy and you know it, wash your hands",
     "projects_handwash_text": "Like many other illnesses, meningitis can be transmitted through the sharing of germs.",
-    "projects_checklist": "• Awareness posters in urban areas.\n• Promotional video with 20,000 shares.\n• Public washing stations throughout the city.",
+    "projects_checklist": "✓ Awareness posters in urban areas.\n✓ Promotional video with 20,000 shares.\n✓ Public washing stations throughout the city.",
 }
 
 
