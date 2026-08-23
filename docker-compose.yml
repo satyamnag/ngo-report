@@ -52,8 +52,8 @@ services:
       MINIO_SECURE: "false"
       MINIO_BUCKET: ngo-report
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      FRONTEND_ORIGIN: http://localhost
-      PUBLIC_BASE_URL: http://localhost/api
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost/api}
     depends_on:
       postgres:
         condition: service_healthy

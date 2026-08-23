@@ -40,11 +40,8 @@ export default function LoginPage() {
 
   return (
     <div className="container" style={{ maxWidth: 420, marginTop: 60 }}>
-      <div className="card">
+      <div className="card auth-card">
         <h1>Sign in</h1>
-        <p className="muted">
-          Demo account: demo@brightpath.org / demo-password-123
-        </p>
         <form onSubmit={submit}>
           <label>Email</label>
           <input

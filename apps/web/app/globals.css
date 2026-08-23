@@ -146,6 +146,13 @@ label {
   background: #eef2f2;
   color: var(--grey);
 }
+
+/* Sign-in / create-account cards: dark grey input text */
+.auth-card input,
+.auth-card textarea,
+.auth-card select {
+  color: #4b5563;
+}
 .status-pill.completed {
   background: #e3f3ec;
   color: #146b3a;
