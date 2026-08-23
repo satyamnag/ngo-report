@@ -508,7 +508,7 @@ def build_publication_template() -> bytes:
 
 
 PUBLICATION_SCHEMA = {
-    "title": "Annual Report — Publication Style",
+    "title": "Annual Report V1",
     "description": "Brochure/book-style annual report mirroring UN/NGO publication layouts: cover, foreword, quote page, executive overview with stat callouts, impact & results, programmes, milestones timeline, financials, donor acknowledgment, looking ahead, closing statement and back cover.",
     "sections": [
         {"key": "foreword", "label": "Foreword", "sort": 1},
@@ -653,5 +653,5 @@ PUBLICATION_SCHEMA = {
 
 
 BUNDLED_TEMPLATES = [
-    ("Annual Report — Publication Style", PUBLICATION_SCHEMA, build_publication_template),
+    ("Annual Report V1", PUBLICATION_SCHEMA, build_publication_template),
 ]
