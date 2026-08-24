@@ -18,6 +18,22 @@ class AiKeyMissingError(RuntimeError):
     """Raised when no OpenAI API key is configured."""
 
 
+# Redact secrets before they ever reach logs (pattern from deep-research-ai-agent).
+_SECRET_PATTERNS = [
+    re.compile(r"\bBearer\s+[A-Za-z0-9._\-]+\b", re.IGNORECASE),
+    re.compile(r"sk-[A-Za-z0-9\-_]{16,}"),
+    re.compile(r"ghp_[A-Za-z0-9]{20,}"),
+    re.compile(r"(?i)(api[_-]?key|authorization|token|secret)\s*[:=]\s*['\"]?[A-Za-z0-9._\-]+"),
+]
+
+
+def redact_secrets(text: str) -> str:
+    """Replace known secret shapes with [REDACTED]."""
+    for pattern in _SECRET_PATTERNS:
+        text = pattern.sub("[REDACTED]", text)
+    return text
+
+
 def load_prompt() -> str:
     return PROMPT_PATH.read_text(encoding="utf-8")
 

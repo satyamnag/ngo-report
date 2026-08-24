@@ -39,6 +39,11 @@ export default function ProjectDetailPage() {
   const [agentMessage, setAgentMessage] = useState("");
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
+  const [verifyBusy, setVerifyBusy] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState("");
+  const [verifyResults, setVerifyResults] = useState<
+    { label: string; verdict: string; confidence: number; reasoning: string }[]
+  >([]);
   const [readiness, setReadiness] = useState<{
     required_missing: string[];
     filled_fields: number;
@@ -162,6 +167,26 @@ export default function ProjectDetailPage() {
     }
   }
 
+  async function aiVerify() {
+    setError("");
+    setVerifyBusy(true);
+    setVerifyMessage("");
+    setVerifyResults([]);
+    try {
+      const res = await api<{
+        verified: { label: string; verdict: string; confidence: number; reasoning: string }[];
+      }>(`/api/projects/${pid}/ai-verify`, { method: "POST", body: {} });
+      setVerifyResults(res.verified);
+      if (res.verified.length === 0) {
+        setVerifyMessage("No numeric fields to verify yet — add figures first.");
+      }
+    } catch (err) {
+      setVerifyMessage(err instanceof Error ? err.message : "Verification failed");
+    } finally {
+      setVerifyBusy(false);
+    }
+  }
+
   async function agentBuild() {
     setError("");
     setAgentBusy(true);
@@ -279,7 +304,45 @@ export default function ProjectDetailPage() {
                 <button className="secondary" onClick={aiReview} disabled={reviewBusy}>
                   {reviewBusy ? "Reviewing…" : "Review with AI"}
                 </button>
+                <button className="secondary" onClick={aiVerify} disabled={verifyBusy}>
+                  {verifyBusy ? "Verifying…" : "Verify facts"}
+                </button>
               </div>
+              {verifyResults.length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <strong className="muted">Fact check (LLM-as-judge):</strong>
+                  <ul style={{ paddingLeft: 18, margin: "8px 0" }}>
+                    {verifyResults.map((v, i) => (
+                      <li key={i} className="muted">
+                        <span
+                          className={
+                            v.verdict === "SUPPORTED"
+                              ? "verdict-ok"
+                              : v.verdict === "PARTIALLY_SUPPORTED"
+                                ? "verdict-warn"
+                                : "verdict-bad"
+                          }
+                        >
+                          {v.verdict === "SUPPORTED" ? "✓" : v.verdict === "PARTIALLY_SUPPORTED" ? "◐" : "✗"}{" "}
+                          {v.label}
+                        </span>{" "}
+                        — {Math.round(v.confidence * 100)}% · {v.reasoning}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {verifyMessage && (
+                <p
+                  className={
+                    verifyMessage.includes("failed") || verifyMessage.includes("not configured")
+                      ? "error"
+                      : "muted"
+                  }
+                >
+                  {verifyMessage}
+                </p>
+              )}
               {agentMessage && (
                 <p
                   className={

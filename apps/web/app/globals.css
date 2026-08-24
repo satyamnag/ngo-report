@@ -181,6 +181,18 @@ label {
   color: var(--danger);
   font-size: 13px;
 }
+.verdict-ok {
+  color: #146b3a;
+  font-weight: 600;
+}
+.verdict-warn {
+  color: #92500e;
+  font-weight: 600;
+}
+.verdict-bad {
+  color: var(--danger);
+  font-weight: 600;
+}
 .notice {
   background: #eaf6f4;
   border: 1px solid #bfe3de;

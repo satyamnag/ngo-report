@@ -323,6 +323,33 @@ def research_generate(
     return {"applied": True, "plan": plan, "steps": steps}
 
 
+@router.post("/{project_id}/ai-verify")
+def ai_verify(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """LLM-as-judge fact check: verdict + confidence for the report's figures.
+
+    Read-only analysis against the gathered sources; never changes data.
+    """
+    org = _get_org(db, current_user)
+    project = _get_project(db, org, project_id)
+    template = db.get(Template, project.template_id)
+
+    from ..services.ai_service import AiKeyMissingError
+    from ..services.verifier import verify_fields
+
+    corpus = _build_corpus(db, project)
+    try:
+        verdicts = verify_fields(project.input_json or {}, template.schema_json, corpus)
+    except AiKeyMissingError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    record_audit(db, "project.ai_verify", user_id=current_user.id, project_id=project.id)
+    return {"verified": list(verdicts.values())}
+
+
 @router.post("/{project_id}/ai-review")
 def ai_review(
     project_id: str,
