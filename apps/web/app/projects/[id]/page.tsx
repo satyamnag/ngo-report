@@ -200,7 +200,7 @@ export default function ProjectDetailPage() {
       <Nav />
       <div className="container">
         <div className="row">
-          <Link href="/">← Home</Link>
+          <Link href="/projects">← Projects</Link>
           <span className="spacer" />
           <button className="secondary" onClick={() => router.push(`/projects/${pid}/edit`)}>
             Edit report

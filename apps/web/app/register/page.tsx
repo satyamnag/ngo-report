@@ -46,7 +46,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="container auth-page" style={{ maxWidth: 420, marginTop: 60 }}>
+    <div className="container" style={{ maxWidth: 420, marginTop: 60 }}>
       <div className="card auth-card">
         <h1>Create account</h1>
         <form onSubmit={submit}>
