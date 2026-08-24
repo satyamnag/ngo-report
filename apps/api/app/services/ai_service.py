@@ -317,6 +317,9 @@ def review_narratives(input_json: dict) -> dict:
         "tone, remove duplication, and improve flow and readability. PRESERVE "
         "every fact, number, percentage, and name exactly as written. Never "
         "invent, add, or remove information.\n"
+        "Also DEDUPLICATE across fields: if the same sentence or idea repeats "
+        "in more than one field, vary the phrasing so no two fields repeat the "
+        "same content (reportAI-style deduplication).\n"
         "Return ONLY a strict JSON object mapping each field name to its "
         "improved text. Omit any field you would not change.\n\n"
         + json.dumps(fields, indent=2, ensure_ascii=False)

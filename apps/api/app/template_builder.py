@@ -1069,7 +1069,9 @@ MAGAZINE_SCHEMA = {
             "fields": [
                 {"name": "finance_photo", "label": "Finance photo", "type": "image", "path": "finance_photo", "placeholder": "finance_photo", "required": False},
                 {"name": "finance_sources", "label": "Sources-of-funding chart", "type": "image", "path": "finance_sources", "placeholder": "finance_sources", "required": False},
+                {"name": "finance_sources_breakdown", "label": "Sources-of-funding breakdown (makes a real chart)", "type": "textarea", "path": "finance_sources_breakdown", "required": False, "placeholder": "e.g. Grants 30%, Donors 30%, Merchandise 15%, 1-Time Donors 10%, Fundraisers 10%, Other 5%"},
                 {"name": "finance_expenses", "label": "Expenses chart", "type": "image", "path": "finance_expenses", "placeholder": "finance_expenses", "required": False},
+                {"name": "finance_expenses_breakdown", "label": "Expenses breakdown (makes a real chart)", "type": "textarea", "path": "finance_expenses_breakdown", "required": False, "placeholder": "e.g. Office 30%, Marketing 29%, Accommodations 21%, Events 15%, Other 5%"},
                 {"name": "finance_events", "label": "Events remark", "type": "textarea", "path": "finance_events", "required": False, "placeholder": "Planning fundraisers, community gatherings, sporting events…"},
                 {"name": "finance_conferences", "label": "Conferences remark", "type": "textarea", "path": "finance_conferences", "required": False, "placeholder": "Attending conferences as guest or speaker…"},
                 {"name": "finance_digital", "label": "Digital marketing remark", "type": "textarea", "path": "finance_digital", "required": False, "placeholder": "A digital roadmap to build our following…"},

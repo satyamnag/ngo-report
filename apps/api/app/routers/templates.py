@@ -39,6 +39,8 @@ _PREVIEW_CONTEXT = {
     "volunteer_hours": "460k",
     "volunteer_party": "1",
     "finance_events": "• Planning fundraiser events\n• Community gatherings\n• Sporting events",
+    "finance_sources_breakdown": "Grants 30%, Donors 30%, Merchandise 15%, 1-Time Donors 10%, Fundraisers 10%, Other 5%",
+    "finance_expenses_breakdown": "Office 30%, Marketing 29%, Accommodations 21%, Events 15%, Other 5%",
     "finance_conferences": "Attending conferences as guest or speaker to raise awareness.",
     "finance_digital": "We create a digital roadmap to building our online following.",
     "projects_fundraiser": "The annual fundraiser is the most significant event of the year in terms of donor impact.",
@@ -118,7 +120,24 @@ def template_preview(
 
     _defaults = {name: __import__("app.storage", fromlist=["ObjectData"]).ObjectData(data=data, content_type=ct) for name, (data, ct) in _default_images().items()}
 
-    rendered = render_report(docx_bytes, context, lambda name: _defaults.get(name))
+    def _provider(name: str):
+        from ..services.charts import donut_chart, parse_breakdown
+
+        if name == "finance_sources":
+            bd = parse_breakdown(context.get("finance_sources_breakdown") or "")
+            if bd:
+                return __import__("app.storage", fromlist=["ObjectData"]).ObjectData(
+                    data=donut_chart(bd, "Sources of Funding"), content_type="image/png"
+                )
+        elif name == "finance_expenses":
+            bd = parse_breakdown(context.get("finance_expenses_breakdown") or "")
+            if bd:
+                return __import__("app.storage", fromlist=["ObjectData"]).ObjectData(
+                    data=donut_chart(bd, "Annual Expenses"), content_type="image/png"
+                )
+        return _defaults.get(name)
+
+    rendered = render_report(docx_bytes, context, _provider)
     pdf = docx_to_pdf(rendered)
 
     import fitz

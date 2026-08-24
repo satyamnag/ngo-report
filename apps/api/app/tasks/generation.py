@@ -15,7 +15,7 @@ from ..services.generation import (
     html_to_plain_text,
     render_report,
 )
-from ..storage import get_storage
+from ..storage import get_storage, ObjectData
 from ..services.theme import apply_background_to_pdf, apply_theme, background_png_bytes
 
 DOCX_MIME = (
@@ -48,10 +48,12 @@ def _load_template_manifest(storage, template_id: str) -> dict[str, str]:
         return {}
 
 
-def _build_image_provider(db, project_id: str, template_id: str):
+def _build_image_provider(db, project_id: str, template_id: str, context: dict | None = None):
     """Return a callable(name) -> ObjectData | None combining user-uploaded
-    project assets with the template's bundled default images."""
+    project assets with the template's bundled default images, plus real charts
+    generated from the user's data where provided."""
     storage = get_storage()
+    context = context or {}
 
     user_assets: dict[str, object] = {}
     for asset in db.query(ReportAsset).filter_by(project_id=project_id).all():
@@ -67,7 +69,25 @@ def _build_image_provider(db, project_id: str, template_id: str):
         except Exception:
             continue
 
+    def _chart(marker: str, field: str, title: str):
+        from ..services.charts import donut_chart, parse_breakdown
+
+        breakdown = parse_breakdown(context.get(field) or "")
+        if breakdown:
+            return ObjectData(
+                data=donut_chart(breakdown, title), content_type="image/png"
+            )
+        return None
+
     def provider(name: str):
+        if name == "finance_sources":
+            chart = _chart(name, "finance_sources_breakdown", "Sources of Funding")
+            if chart:
+                return chart
+        elif name == "finance_expenses":
+            chart = _chart(name, "finance_expenses_breakdown", "Annual Expenses")
+            if chart:
+                return chart
         if name in user_assets:
             return user_assets[name]
         if name in defaults:
@@ -102,7 +122,7 @@ def _run_generation(
 
     context = build_defaulted_context(template.schema_json, generation.input_json or {})
     template_bytes = storage.get(template.file_key).data
-    provider = _build_image_provider(db, project.id, template.id)
+    provider = _build_image_provider(db, project.id, template.id, context)
     docx_bytes = render_report(template_bytes, context, provider)
 
     # Fold Word-like rich section edits into the DOCX (falls back to plain text).
