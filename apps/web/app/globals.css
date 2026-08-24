@@ -101,14 +101,18 @@ a:hover {
 }
 
 /* Main content sits to the right of the sidebar */
-.container {
-  max-width: 960px;
-  margin: 0 auto 0 240px;
-  padding: 24px;
+.container,
+.home {
+  margin-left: 240px;
+}
+.auth-page {
+  margin-left: 0;
 }
 
-.auth-page {
+.container {
+  max-width: 960px;
   margin: 0 auto;
+  padding: 24px;
 }
 
 .card {
