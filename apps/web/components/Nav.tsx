@@ -1,45 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-
-import { AUTH_ENABLED, api, clearTokens, getToken, type User } from "@/lib/api";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Nav() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    if (!AUTH_ENABLED) return;
-    if (!getToken()) return;
-    api<User>("/api/auth/me")
-      .then(setUser)
-      .catch(() => {
-        clearTokens();
-      });
-  }, []);
-
-  function logout() {
-    clearTokens();
-    router.push("/login");
-  }
-
   return (
-    <nav className="nav">
-      <Link href="/" className="brand">
-        NGO Report Studio
-      </Link>
-      {AUTH_ENABLED && user && (
-        <>
-          <span className="muted">
-            {user.org_name} · {user.email}
-          </span>
-          <button className="secondary" onClick={logout}>
-            Sign out
-          </button>
-        </>
-      )}
-    </nav>
+    <aside className="sidebar">
+      <div className="sidebar-top">
+        <Link href="/" className="brand">
+          NGO Report Studio
+        </Link>
+      </div>
+
+      <div className="sidebar-bottom">
+        <ThemeToggle />
+        <button className="sidebar-icon user-icon" title="Account" aria-label="Account">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </button>
+      </div>
+    </aside>
   );
 }

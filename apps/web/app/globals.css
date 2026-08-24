@@ -53,6 +53,62 @@ a:hover {
   font-size: 13px;
 }
 
+/* Left sidebar */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 220px;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 14px;
+  z-index: 100;
+}
+.sidebar .brand {
+  display: block;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--teal);
+  padding: 6px 8px;
+  line-height: 1.3;
+}
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-icon {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--ink);
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.sidebar-icon:hover {
+  border-color: var(--teal);
+  background: #f0f7f6;
+}
+.sidebar-icon.user-icon {
+  margin-bottom: 0;
+}
+
+/* Main content sits to the right of the sidebar */
+.container,
+.home {
+  margin-left: 240px;
+}
+.auth-page {
+  margin-left: 0;
+}
+
 .container {
   max-width: 960px;
   margin: 0 auto;
@@ -199,8 +255,8 @@ label {
 /* Home screen */
 .home {
   max-width: 720px;
-  margin: 0 auto;
-  padding: 48px 24px 32px;
+  margin: 48px 24px 32px 240px;
+  padding: 0 0 0 0;
   text-align: center;
 }
 .home h1 {
@@ -418,6 +474,75 @@ pre.json {
   font-size: 12px;
   text-align: center;
   color: var(--ink);
+}
+
+/* Dark mode */
+[data-theme="dark"] {
+  --bg: #10181a;
+  --card: #162124;
+  --border: #2b3a3e;
+  --ink: #dce7e6;
+  --grey: #93a5a3;
+}
+[data-theme="dark"] body {
+  background: var(--bg);
+  color: var(--ink);
+}
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: #0f1719;
+  color: #e8f0ef;
+  border-color: var(--border);
+}
+[data-theme="dark"] .auth-card input,
+[data-theme="dark"] .auth-card textarea,
+[data-theme="dark"] .auth-card select {
+  color: #e8f0ef;
+}
+[data-theme="dark"] .prompt-box,
+[data-theme="dark"] .attach-btn {
+  background: #0f1719;
+  color: var(--ink);
+}
+[data-theme="dark"] .prompt-footer {
+  background: #1b262b;
+}
+[data-theme="dark"] .editor-toolbar {
+  background: #1b262b;
+  border-color: var(--border);
+}
+[data-theme="dark"] .editor-shell {
+  border-color: var(--border);
+  background: #0f1719;
+}
+[data-theme="dark"] .ProseMirror {
+  color: var(--ink);
+}
+[data-theme="dark"] .modal {
+  background: #162124;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+[data-theme="dark"] .preview-viewport {
+  background: #1b262b;
+  border-color: var(--border);
+}
+[data-theme="dark"] .notice {
+  background: #1b262b;
+  border-color: var(--border);
+}
+[data-theme="dark"] .file-list span {
+  background: #1b262b;
+  border-color: var(--border);
+}
+[data-theme="dark"] .bg-swatch {
+  background: #0f1719;
+}
+[data-theme="dark"] .home-card {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .sidebar-icon:hover {
+  background: #1b262b;
 }
 
 /* Confirmation dialog */
